@@ -1,37 +1,19 @@
-import { useState } from 'react';
-import { invoke } from '@tauri-apps/api/core';
 import './App.css';
+import { InputIcon } from './InputIcon';
 
 function App() {
-	const [greetMsg, setGreetMsg] = useState('');
-	const [name, setName] = useState('');
-
-	async function greet() {
-		setGreetMsg(await invoke('greet', { name }));
-	}
-
 	return (
-		<main className="container">
-			<h1 className="">Hello Tauri + React + TailwindCSS</h1>
-			<p className="text-xl text-red-700">
-				Click on the Tauri, Vite, and React logos to learn more.
-			</p>
-
-			<form
-				className="row"
-				onSubmit={(e) => {
-					e.preventDefault();
-					greet();
-				}}
-			>
+		<main className="flex h-screen w-screen items-center justify-center">
+			<div className="relative gap-4 bg-input flex flex-col items-center justify-center text-white  w-full h-full text-xl ">
 				<input
-					id="greet-input"
-					onChange={(e) => setName(e.currentTarget.value)}
-					placeholder="Enter a name..."
+					id="file-input"
+					type="file"
+					multiple
+					className=" absolute inset-0 w-full h-full opacity-0"
 				/>
-				<button type="submit">Greet</button>
-			</form>
-			<p>{greetMsg}</p>
+				<label htmlFor="file-input">Chose file for parse</label>
+				<InputIcon />
+			</div>
 		</main>
 	);
 }
