@@ -1,4 +1,4 @@
-import { ToggleIcon } from '../ToggleIcon';
+import { ToggleIcon } from '../icons/ToggleIcon';
 import Button from './Button';
 import Card from './Card';
 
@@ -12,7 +12,7 @@ const SideBar = ({ isOpen, onToggle }: any) => {
                 const [name, setName] = useState("");
                 }`;
 	return (
-		<div
+		<aside
 			className={`w-64 fixed z-10 h-full  bg-[#F4F4F5] rounded p-4  overflow-auto ${
 				isOpen ? 'translate-x-0' : '-translate-x-full'
 			} transition-transform duration-300 ease-in-out`}
@@ -30,7 +30,7 @@ const SideBar = ({ isOpen, onToggle }: any) => {
 			<Card code={code} />
 			<Card code={code} />
 			<Card code={code} />
-		</div>
+		</aside>
 	);
 };
 

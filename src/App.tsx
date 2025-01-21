@@ -1,12 +1,21 @@
 import './App.css';
-import { InputIcon } from './InputIcon';
+import { InputIcon } from './icons/InputIcon';
 import { useState } from 'react';
 import SideBar from './components/SideBar';
-import { ToggleIcon } from './ToggleIcon';
+import { ToggleIcon } from './icons/ToggleIcon';
 import Button from './components/Button';
+import Modal from './components/Modal';
+import { SettingIcon } from './icons/SettingIcon';
 
 function App() {
 	const [isSideBarOpen, setIsSideBarOpen] = useState(true);
+	const [isModalOpen, setIsModalOpen] = useState(false);
+	const modalOpen = () => {
+		setIsModalOpen(true);
+	};
+	const modalClose = () => {
+		setIsModalOpen(false);
+	};
 
 	const toggleSideBar = () => {
 		setIsSideBarOpen(!isSideBarOpen);
@@ -29,6 +38,13 @@ function App() {
 					<ToggleIcon />
 				</Button>
 			</div>
+			<div className="absolute top-0 right-0">
+				<Button className="p-4 flex items-center gap-2" onClick={modalOpen}>
+					<SettingIcon />
+					Presets
+				</Button>
+			</div>
+			<Modal isOpen={isModalOpen} onClose={modalClose} />
 		</main>
 	);
 }
