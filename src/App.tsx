@@ -45,7 +45,7 @@ function App() {
 	};
 
 	return (
-		<main className="flex h-screen ">
+		<main className="flex h-screen bg-gradient-to-r from-gray-950 to-black  ">
 			<SideBar
 				isOpen={isSideBarOpen}
 				onToggle={toggleSideBar}
@@ -56,20 +56,24 @@ function App() {
 				selectedPaths={selectedPaths}
 			/>
 
-			<section className=" flex-1 gap-4 bg-black  flex flex-col w-full h-full ">
+			<section className=" flex-1 gap-4  flex flex-col w-full h-full ">
 				<div className="text-center pt-16">
 					{/* <h1 className="font-medium leading-none text-white  text-5xl">AI Prompt Parser</h1> */}
 				</div>
 
 				<div className="flex flex-1 items-center justify-center flex-col gap-4">
 					{!showFileStructure ? (
-						<FileInput onFolderSelected={onFolderSelected} />
+						<div className="flex rounded-2xl w-[450px] h-[290px] bg-gray-900 p-6 border border-gray-800">
+							<div className="flex bg-black flex-col items-center justify-center w-full h-full border-2 border-gray-800 border-dashed rounded-2xl">
+								<FileInput onFolderSelected={onFolderSelected} />
+							</div>
+						</div>
 					) : (
 						<Button
-							className="p-4 border bg-blue-500 px-4 py-2 rounded-lg text-white hover:bg-blue-700"
+							className="border-none px-6 py-2 text-sm text-white rounded-full tracking-tight outline-none bg-blue-600 hover:bg-blue-800 transition-all"
 							onClick={toggleParse}
 						>
-							Parse File
+							Parse your files
 						</Button>
 					)}
 				</div>

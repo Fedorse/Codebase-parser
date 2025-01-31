@@ -13,7 +13,7 @@ export const FileInput = ({ onFolderSelected }) => {
 			/>
 			<InputIcon />
 			<label htmlFor="file-input" className="text-gray-400 font-light leading-snug">
-				Add files for Prompt
+				Drag & Drop folder or files here
 			</label>
 		</>
 	);

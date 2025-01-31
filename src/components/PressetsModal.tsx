@@ -8,24 +8,13 @@ export const PressetsModal = ({ isOpen, onClose }) => {
 					className="fixed inset-0 bg-black/60 backdrop-blur-sm transition-opacity"
 					onClick={onClose}
 				/>
-				<div className="relative text-gray-300 border border-gray-700   bg-zinc-950 w-[600px] max-h-[80vh] rounded-xl shadow-xl">
+				<div className="relative text-gray-300 border border-gray-800   bg-zinc-950 w-[600px] max-h-[80vh] rounded-xl shadow-xl">
 					<div className="text-center pt-6">
 						<h2 className="text-2xl font-bold">Presets configuration</h2>
 					</div>
 					<div className="px-6 py-4 overflow-y-auto">
 						<form className="space-y-4 " action="">
 							<Input id="title" placeholder="" label={'Preset Name'} />
-
-							{/* <label htmlFor="pattern" className="block text-sm font-medium text-gray-700 mb-1">
-									Parse pattern
-								</label> */}
-							{/* <select
-									name=""
-									className="bg-gray-50 w-full rounded-lg border px-4 py-2 "
-									id="pattern"
-								>
-									<option value="Ignore pattern">Ignore pattern</option>
-								</select> */}
 							<Input id="include" placeholder="" label={'Files to include'} />
 							<Input id="exclude" placeholder="" label={'Files to exclude'} />
 
@@ -40,13 +29,13 @@ export const PressetsModal = ({ isOpen, onClose }) => {
 							<div className="flex justify-between ">
 								<Button
 									onClick={() => console.log('save')}
-									className="border px-4 py-2 text-white rounded-lg bg-blue-500 hover:bg-blue-700"
+									className="border-none px-6 py-2 text-sm text-white rounded-full tracking-tight outline-none bg-blue-600 hover:bg-blue-800 transition-all"
 								>
 									Save
 								</Button>
 								<Button
 									onClick={() => console.log('Delete')}
-									className="border px-4 py-2 text-white rounded-lg bg-blue-500 hover:bg-blue-700"
+									className="border-none px-6 py-2 text-sm text-white rounded-full tracking-tight outline-none bg-blue-600 hover:bg-blue-800 transition-all"
 								>
 									Delete
 								</Button>
