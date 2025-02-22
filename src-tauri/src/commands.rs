@@ -1,33 +1,8 @@
 use std::fs::{self, File};
 use std::io::{self, Write};
-use io::{Error, ErrorKind};
-use std::path::PathBuf;
 use chrono::Local;
-use directories::ProjectDirs;
 
-const APP_NAME: &str = "parser-ai";
-
-fn get_project_dir() -> Result<PathBuf, io::Error> {
-    match ProjectDirs::from("", "", APP_NAME) {
-        Some(proj_dirs) => {
-            let path = proj_dirs.data_local_dir();
-            fs::create_dir_all(path)?;
-            Ok(path.to_path_buf())
-        }
-        None => Err(Error::new(ErrorKind::NotFound, "Failed to locate project directory")),
-    }
-}
-
-fn get_file_path(file_name: String) -> Result<PathBuf, String> {
-    let project_dir = get_project_dir().map_err(|e| e.to_string())?;
-    let file_path = project_dir.join(file_name);
-
-    if file_path.exists() {
-        Ok(file_path)
-    } else {
-        Err("File not found".to_string())
-    }
-}
+use crate::utils::*;
 
 #[tauri::command]
 pub fn parse_files(file_paths: Vec<String>, title: String) -> Result<String, String> {
@@ -92,5 +67,15 @@ pub fn remove_file(file_name: String) -> Result<(), String> {
     match fs::remove_file(file_path) {
         Ok(_) => Ok(()),
         Err(_) => Err("Failed to remove file".to_string())
+    }
+}
+
+#[tauri::command]
+pub fn update_file(file_name: String, content: String) -> Result<(), String> {
+    let file_path = get_file_path(file_name).map_err(|e| e.to_string())?;
+
+    match fs::write(file_path, content) {
+        Ok(_) => Ok(()),
+        Err(_) => Err("Failed to update file".to_string())
     }
 }

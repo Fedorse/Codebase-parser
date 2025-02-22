@@ -5,6 +5,14 @@ import { open } from "@tauri-apps/plugin-dialog";
 export default function FileUploader() {
   const [savedFiles, setSavedFiles] = useState<string[]>([]);
   const [currentFile, setCurrentFile] = useState<string>("");
+  const [currentFileContent, setCurrentFileContent] = useState<string>("");
+
+  const saveCurrentFile = async () => {
+    await invoke("update_file", {
+      fileName: currentFile,
+      content: currentFileContent,
+    });
+  };
 
   const reloadFiles = async () => {
     const res = await invoke("get_files");
@@ -14,7 +22,9 @@ export default function FileUploader() {
 
   const handleFileClick = async (fileName: string) => {
     const content = await invoke("get_file_content", { fileName });
-    setCurrentFile(content);
+    setCurrentFile(fileName);
+
+    setCurrentFileContent(content);
   };
 
   const handleFileRemove = async (fileName) => {
@@ -62,18 +72,18 @@ export default function FileUploader() {
         Select Files
       </button>
 
-      {savedFiles.map((filePath) => (
+      {savedFiles.map((fileName) => (
         <div
-          onClick={() => handleFileClick(filePath)}
+          onClick={() => handleFileClick(fileName)}
           className="mt-4 text-md text-gray-600 cursor-pointer gap-10"
-          key={filePath}
+          key={fileName}
         >
-          <span className="text-ellipsis">{filePath}</span>
+          <span className="text-ellipsis">{fileName}</span>
           <span
             className="text-red-600 text-lg"
             onClick={(e) => {
               e.stopPropagation();
-              handleFileRemove(filePath);
+              handleFileRemove(fileName);
             }}
           >
             | X |
@@ -83,7 +93,13 @@ export default function FileUploader() {
 
       {currentFile && (
         <div className="mt-4 text-sm text-black gap-10">
-          <span>{currentFile}</span>
+          <textarea
+            value={currentFileContent}
+            onChange={(e) => setCurrentFileContent(e.target.value)}
+            className="w-full h-full rounded-lg border-2 border-gray-300 p-4"
+          ></textarea>
+
+          <button onClick={() => saveCurrentFile()}>Save</button>
         </div>
       )}
     </div>
