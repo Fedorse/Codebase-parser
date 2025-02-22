@@ -12,13 +12,13 @@ export default function FileUploader() {
     setSavedFiles(res);
   };
 
-  const handleFileClick = async (path: string) => {
-    const content = await invoke("get_file_content", { filePath: path });
+  const handleFileClick = async (fileName: string) => {
+    const content = await invoke("get_file_content", { fileName });
     setCurrentFile(content);
   };
 
-  const handleFileRemove = async (path) => {
-    await invoke("remove_file", { filePath: path });
+  const handleFileRemove = async (fileName) => {
+    await invoke("remove_file", { fileName });
     await reloadFiles();
   };
 
@@ -34,6 +34,7 @@ export default function FileUploader() {
   const handleFileSelect = async () => {
     const selected = await open({
       multiple: true,
+      //   directory: true,
       filters: [{ name: "Text", extensions: ["txt", "log", "md"] }],
     });
 
