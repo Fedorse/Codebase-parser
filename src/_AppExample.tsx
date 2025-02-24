@@ -1,13 +1,18 @@
 import { useEffect, useState } from 'react';
 import { invoke } from '@tauri-apps/api/core';
 import { open } from '@tauri-apps/plugin-dialog';
-import Navbar from './components/Navbar';
-import DragAndDrop from './components/DragAndDrop';
-import ListFiles from './components/ListFiles';
 
 export default function FileUploader() {
 	const [savedFiles, setSavedFiles] = useState<string[]>([]);
 	const [currentFile, setCurrentFile] = useState<string>('');
+	const [currentFileContent, setCurrentFileContent] = useState<string>('');
+
+	const saveCurrentFile = async () => {
+		await invoke('update_file', {
+			fileName: currentFile,
+			content: currentFileContent
+		});
+	};
 
 	const reloadFiles = async () => {
 		const res = await invoke('get_files');
@@ -15,13 +20,15 @@ export default function FileUploader() {
 		setSavedFiles(res);
 	};
 
-	const handleFileClick = async (path: string) => {
-		const content = await invoke('get_file_content', { filePath: path });
-		setCurrentFile(content);
+	const handleFileClick = async (fileName: string) => {
+		const content = await invoke('get_file_content', { fileName });
+		setCurrentFile(fileName);
+
+		setCurrentFileContent(content);
 	};
 
-	const handleFileRemove = async (path) => {
-		await invoke('remove_file', { filePath: path });
+	const handleFileRemove = async (fileName) => {
+		await invoke('remove_file', { fileName });
 		await reloadFiles();
 	};
 
@@ -37,25 +44,10 @@ export default function FileUploader() {
 	const handleFileSelect = async () => {
 		const selected = await open({
 			multiple: true,
+			//   directory: true,
 			filters: [{ name: 'Text', extensions: ['txt', 'log', 'md'] }]
 		});
 
-		let files;
-
-		if (Array.isArray(selected)) {
-			files = selected;
-		} else if (selected) {
-			files = selected;
-		}
-
-		await parseFiles(files);
-	};
-	const handleFolderSelect = async () => {
-		const selected = await open({
-			multiple: true,
-			directory: true,
-			filters: [{ name: 'Text', extensions: ['txt', 'log', 'md'] }]
-		});
 		let files;
 
 		if (Array.isArray(selected)) {
@@ -72,42 +64,41 @@ export default function FileUploader() {
 	}, []);
 
 	return (
-		<>
-			<Navbar />
-			<main className="bg-black h-screen w-screen flex flex-col items-center justify-center gap-5">
-				<DragAndDrop handleFileSelect={handleFileSelect} handleFolderSelect={handleFolderSelect} />
-				{/* <ListFiles /> */}
-				<div className="p-2 border-[1px] border-gray-800 w-[600px] rounded-lg">
-					<div className="flex flex-col items-center justify-center ">
-						{savedFiles.map((filePath, index) => (
-							<div
-								onClick={() => handleFileClick(filePath)}
-								className={`mt-4 text-md text-gray-400 cursor-pointer gap-10 w-full flex justify-center items-center ${
-									index !== savedFiles.length - 1 ? 'border-b-[1px] border-gray-800' : ''
-								}`}
-								key={filePath}
-							>
-								<span className="text-ellipsis ">{filePath}</span>
-								<span
-									className="text-red-600 text-lg"
-									onClick={(e) => {
-										e.stopPropagation();
-										handleFileRemove(filePath);
-									}}
-								>
-									delete
-								</span>
-							</div>
-						))}
+		<div className="p-4 border rounded-lg shadow-lg">
+			<button onClick={handleFileSelect} className="px-4 py-2 bg-blue-500 text-white rounded">
+				Select Files
+			</button>
 
-						{currentFile && (
-							<div className="mt-4 text-sm text-white gap-10">
-								<span>{currentFile}</span>
-							</div>
-						)}
-					</div>
+			{savedFiles.map((fileName) => (
+				<div
+					onClick={() => handleFileClick(fileName)}
+					className="mt-4 text-md text-gray-600 cursor-pointer gap-10"
+					key={fileName}
+				>
+					<span className="text-ellipsis">{fileName}</span>
+					<span
+						className="text-red-600 text-lg"
+						onClick={(e) => {
+							e.stopPropagation();
+							handleFileRemove(fileName);
+						}}
+					>
+						| X |
+					</span>
 				</div>
-			</main>
-		</>
+			))}
+
+			{currentFile && (
+				<div className="mt-4 text-sm text-black gap-10">
+					<textarea
+						value={currentFileContent}
+						onChange={(e) => setCurrentFileContent(e.target.value)}
+						className="w-full h-full rounded-lg border-2 border-gray-300 p-4"
+					></textarea>
+
+					<button onClick={() => saveCurrentFile()}>Save</button>
+				</div>
+			)}
+		</div>
 	);
 }

@@ -1,23 +1,28 @@
 use std::fs;
-use std::io;
+use std::io::{self, Error, ErrorKind};
 use std::path::PathBuf;
+use directories::ProjectDirs;
 
-let SAVE_PATH = '/'
+const APP_NAME: &str = "parser-ai";
 
-fn parse_files(file_paths: Vec<String>) -> Result<String, io::Error> {
-    let mut concatenated_content = String::new();
-
-    for path in file_paths {
-        let file = fs::read_to_string(path);
-        match file {
-            Ok(content) => {
-                concatenated_content.push_str(&content);
-            },
-            Err(error) => {
-                return Err(error);
-            }
+pub fn get_project_dir() -> Result<PathBuf, io::Error> {
+    match ProjectDirs::from("", "", APP_NAME) {
+        Some(proj_dirs) => {
+            let path = proj_dirs.data_local_dir();
+            fs::create_dir_all(path)?;
+            Ok(path.to_path_buf())
         }
+        None => Err(Error::new(ErrorKind::NotFound, "Failed to locate project directory")),
     }
+}
 
-    return concatenated_content
+pub fn get_file_path(file_name: String) -> Result<PathBuf, String> {
+    let project_dir = get_project_dir().map_err(|e| e.to_string())?;
+    let file_path = project_dir.join(file_name);
+
+    if file_path.exists() {
+        Ok(file_path)
+    } else {
+        Err("File not found".to_string())
+    }
 }

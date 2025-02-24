@@ -1,5 +1,6 @@
 // Learn more about Tauri commands at https://tauri.app/develop/calling-rust/
-mod commands;
+pub mod utils;
+pub mod commands;
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
@@ -10,7 +11,8 @@ pub fn run() {
             commands::parse_files,
             commands::get_files,
             commands::get_file_content,
-            commands::remove_file
+            commands::remove_file,
+            commands::update_file
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
