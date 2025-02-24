@@ -1,67 +1,94 @@
 import './App.css';
-import { useState } from 'react';
-import { useFileTree } from './hooks/useFileTree';
+import { BrowserRouter, Routes, Route } from 'react-router-dom';
+import RootLoyaout from './layouts/RootLoyaout';
+import FileUploader from './routes/FileUploader';
+import SavedFiles from './routes/SavedFiles';
+import { useEffect, useState } from 'react';
+import { invoke } from '@tauri-apps/api/core';
+import { open } from '@tauri-apps/plugin-dialog';
 
-import SideBar from './components/SideBar';
-import Button from './components/Button';
-import PressetsModal from './components/PressetsModal';
-import PreviewModal from './components/PreviewModal';
-import DragAndDrop from './components/DragAndDrop';
-import Header from './components/Header';
+export default function App() {
+	const [savedFiles, setSavedFiles] = useState<string[]>([]);
+	const [currentFile, setCurrentFile] = useState<string>('');
 
-function App() {
-	const [isSideBarOpen, setIsSideBarOpen] = useState(true);
-	const [isModalOpen, setIsModalOpen] = useState(false);
-	const [previewCode, setPreviewCode] = useState(null);
-	const [isPreviewOpen, setIsPreviewOpen] = useState(false);
+	const reloadFiles = async () => {
+		const res = await invoke('get_files');
 
-	const {
-		fileStructure,
-		selectedPaths,
-		showFileStructure,
+		setSavedFiles(res);
+	};
+
+	const handleFileClick = async (path: string) => {
+		const content = await invoke('get_file_content', { filePath: path });
+		setCurrentFile(content);
+	};
+
+	const handleFileRemove = async (path) => {
+		await invoke('remove_file', { filePath: path });
+		await reloadFiles();
+	};
+
+	const parseFiles = async (files) => {
+		await invoke('parse_files', {
+			filePaths: files,
+			title: 'Test'
+		});
+
+		await reloadFiles();
+	};
+
+	const handleFileSelect = async () => {
+		const selected = await open({
+			multiple: true,
+			filters: [{ name: 'Text', extensions: ['txt', 'log', 'md'] }]
+		});
+
+		let files;
+
+		if (Array.isArray(selected)) {
+			files = selected;
+		} else if (selected) {
+			files = selected;
+		}
+
+		await parseFiles(files);
+	};
+	const handleFolderSelect = async () => {
+		const selected = await open({
+			multiple: true,
+			directory: true,
+			filters: [{ name: 'Text', extensions: ['txt', 'log', 'md'] }]
+		});
+		let files;
+
+		if (Array.isArray(selected)) {
+			files = selected;
+		} else if (selected) {
+			files = selected;
+		}
+
+		await parseFiles(files);
+	};
+
+	useEffect(() => {
+		reloadFiles();
+	}, []);
+
+	const fileProps = {
+		savedFiles,
+		handleFileClick,
+		handleFileRemove,
+		currentFile,
 		handleFolderSelect,
-		toggleNodeCheck,
-		parseSelected
-	} = useFileTree();
-
-	const closePreview = () => {
-		setPreviewCode(null);
-		setIsPreviewOpen(false);
+		handleFileSelect
 	};
-	const openPreview = (code: string) => {
-		setPreviewCode(code);
-		setIsPreviewOpen(true);
-	};
-
 	return (
-		<main className="flex h-screen w-screen bg-gradient-to-r from-gray-950 to-black  ">
-			<SideBar
-				isOpen={isSideBarOpen}
-				onToggle={() => setIsSideBarOpen(!isSideBarOpen)}
-				onPreview={openPreview}
-				fileStructure={fileStructure}
-				showFileStructure={showFileStructure}
-				toggleNodeCheck={toggleNodeCheck}
-				selectedPaths={selectedPaths}
-			/>
-
-			<section className=" flex-1 flex flex-col w-full h-full ">
-				<Header
-					setIsModalOpen={setIsModalOpen}
-					setIsSideBarOpen={setIsSideBarOpen}
-					isSideBarOpen={isSideBarOpen}
-				/>
-				<div className="flex items-center justify-center h-full">
-					{!showFileStructure ? (
-						<DragAndDrop onFolderSelected={handleFolderSelect} />
-					) : (
-						<Button onClick={parseSelected}>Parse your files</Button>
-					)}
-				</div>
-			</section>
-
-			<PressetsModal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} />
-			<PreviewModal code={previewCode} onClose={closePreview} isOpen={isPreviewOpen} />
-		</main>
+		<BrowserRouter>
+			<Routes>
+				<Route element={<RootLoyaout />}>
+					<Route path="/" element={<FileUploader {...fileProps} />}></Route>
+					<Route path="/saved-files" element={<SavedFiles {...fileProps} />}></Route>
+				</Route>
+			</Routes>
+		</BrowserRouter>
 	);
 }

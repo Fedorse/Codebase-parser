@@ -1,9 +1,9 @@
 import { useEffect, useState } from 'react';
 import { invoke } from '@tauri-apps/api/core';
 import { open } from '@tauri-apps/plugin-dialog';
-import Navbar from './components/newDesign/Navbar';
-import DragAndDrop from './components/newDesign/DragAndDrop';
-import ListFiles from './components/newDesign/ListFiles';
+import Navbar from './components/Navbar';
+import DragAndDrop from './components/DragAndDrop';
+import ListFiles from './components/ListFiles';
 
 export default function FileUploader() {
 	const [savedFiles, setSavedFiles] = useState<string[]>([]);
