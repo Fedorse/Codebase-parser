@@ -25,4 +25,7 @@ serde_json = "1"
 tauri-plugin-dialog = "2"
 chrono = "0.4.39"
 directories = "6.0.0"
+glob = "0.3.2"
+tauri-plugin-log = "2.2.1"
+log = "0.4.26"
 

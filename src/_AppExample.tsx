@@ -2,10 +2,23 @@ import { useEffect, useState } from "react";
 import { invoke } from "@tauri-apps/api/core";
 import { open } from "@tauri-apps/plugin-dialog";
 
+type Preset = {
+  name: string;
+  ignorePatterns: string;
+};
+
 export default function FileUploader() {
   const [savedFiles, setSavedFiles] = useState<string[]>([]);
   const [currentFile, setCurrentFile] = useState<string>("");
   const [currentFileContent, setCurrentFileContent] = useState<string>("");
+  const [currentPreset, setCurrentPreset] = useState<Preset | null>(null);
+  const [savedPresets, setSavedPresets] = useState<Preset[]>([]);
+  const [defaultPresets, setDefaultPresets] = useState<Preset[]>([]);
+
+  const [newPreset, setNewPreset] = useState<Preset>({
+    name: "",
+    ignorePatterns: "",
+  });
 
   const saveCurrentFile = async () => {
     await invoke("update_file", {
@@ -33,9 +46,13 @@ export default function FileUploader() {
   };
 
   const parseFiles = async (files) => {
+    const ignorePatterns = currentPreset?.ignorePatterns ?? [];
+
+    console.log("IGNORE", ignorePatterns);
+
     await invoke("parse_files", {
       filePaths: files,
-      title: "Test",
+      ignorePatterns,
     });
 
     await reloadFiles();
@@ -45,7 +62,6 @@ export default function FileUploader() {
     const selected = await open({
       multiple: true,
       //   directory: true,
-      filters: [{ name: "Text", extensions: ["txt", "log", "md"] }],
     });
 
     let files;
@@ -61,7 +77,21 @@ export default function FileUploader() {
 
   useEffect(() => {
     reloadFiles();
+    invoke("get_presets").then((res) => {
+      console.log("RES", res);
+
+      const { default: defaultPresets, saved } = res;
+
+      setDefaultPresets(defaultPresets);
+      setSavedPresets(saved);
+    });
   }, []);
+
+  const savePreset = async () => {
+    await invoke("save_preset", { preset: newPreset });
+    setSavedPresets([...savedPresets, newPreset]);
+    setNewPreset({ name: "", ignorePatterns: "" });
+  };
 
   return (
     <div className="p-4 border rounded-lg shadow-lg">
@@ -102,6 +132,71 @@ export default function FileUploader() {
           <button onClick={() => saveCurrentFile()}>Save</button>
         </div>
       )}
+
+      <h3>PRESETS</h3>
+      {savedPresets.map((preset) => (
+        <div
+          onClick={() => setCurrentPreset(preset)}
+          className="mt-4 text-md text-gray-600 cursor-pointer gap-10"
+          key={preset.name}
+        >
+          <span className="text-ellipsis">{preset.name}</span>
+          <span className="text-red-600 text-lg">{preset.ignorePatterns}</span>
+          <span
+            className="text-red-600 text-lg"
+            onClick={(e) => {
+              e.stopPropagation();
+              invoke("delete_preset", { preset });
+            }}
+          >
+            | X |
+          </span>
+        </div>
+      ))}
+      {defaultPresets.map((preset) => (
+        <div
+          onClick={() => setCurrentPreset(preset)}
+          className="mt-4 text-md text-gray-600 cursor-pointer gap-10"
+          key={preset.name}
+        >
+          <span className="text-ellipsis">{preset.name}</span>
+          <span className="text-red-600 text-lg">{preset.ignorePatterns}</span>
+        </div>
+      ))}
+      <form
+        className="mt-4"
+        onSubmit={(e) => {
+          e.preventDefault();
+          savePreset();
+        }}
+      >
+        <label htmlFor="preset-name" className="text-sm">
+          New Presets
+        </label>
+        <input
+          type="text"
+          id="preset-name"
+          className="w-full rounded-lg border-2 border-gray-300 p-4"
+          value={newPreset.name}
+          onChange={(e) =>
+            setNewPreset({ ...newPreset, ignorePatterns: e.target.value })
+          }
+        />
+        <label htmlFor="ignore-patterns" className="text-sm">
+          Files to ignore, comma separated
+        </label>
+
+        <input
+          type="text"
+          id="ignore-patterns"
+          className="w-full rounded-lg border-2 border-gray-300 p-4"
+          value={newPreset.ignorePatterns}
+          onChange={(e) =>
+            setNewPreset({ ...newPreset, ignorePatterns: e.target.value })
+          }
+        />
+        <button>Add new preset</button>
+      </form>
     </div>
   );
 }
