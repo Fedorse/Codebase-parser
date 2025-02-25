@@ -1,30 +1,24 @@
 import { useState, useEffect } from 'react';
 import { invoke } from '@tauri-apps/api/core';
 import { open } from '@tauri-apps/plugin-dialog';
-import { BrowserRouter, Routes, Route } from 'react-router-dom';
-import RootLayout from './layouts/RootLoyaout';
-import FileUploader from './routes/FileUploader';
-import SavedFiles from './routes/SavedFiles';
 
-export default function App() {
-	const [savedFiles, setSavedFiles] = useState([]);
-	const [currentFile, setCurrentFile] = useState('');
-	const [currentFileContent, setCurrentFileContent] = useState('');
+export const useFileManager = () => {
+	const [saveFiles, setSaveFiles] = useState<string[]>([]);
+	const [currentFile, setCurrentFile] = useState<string>('');
+	const [currentFileContent, setCurrentFileContent] = useState<string>('');
 
-	const saveCurrentFile = async (content) => {
+	const saveCurrentFile = async () => {
 		await invoke('update_file', {
 			fileName: currentFile,
-			content: content
+			content: currentFileContent
 		});
-		setCurrentFileContent(content);
 	};
-
 	const reloadFiles = async () => {
 		const res = await invoke('get_files');
-		setSavedFiles(res);
+		setSaveFiles(res);
 	};
 
-	const handleFileClick = async (fileName) => {
+	const handleFileClick = async (fileName: string) => {
 		const content = await invoke('get_file_content', { fileName });
 		setCurrentFile(fileName);
 		setCurrentFileContent(content);
@@ -38,9 +32,8 @@ export default function App() {
 	const parseFiles = async (files) => {
 		await invoke('parse_files', {
 			filePaths: files,
-			title: 'Test'
+			title: 'files1test'
 		});
-		await reloadFiles();
 	};
 
 	const handleFileSelect = async () => {
@@ -48,10 +41,14 @@ export default function App() {
 			multiple: true,
 			filters: [{ name: 'Text', extensions: ['txt', 'log', 'md'] }]
 		});
+		let files;
 
-		if (!selected) return;
+		if (Array.isArray(selected)) {
+			files = selected;
+		} else if (selected) {
+			files = selected;
+		}
 
-		const files = Array.isArray(selected) ? selected : [selected];
 		await parseFiles(files);
 	};
 
@@ -62,35 +59,34 @@ export default function App() {
 			filters: [{ name: 'Text', extensions: ['txt', 'log', 'md'] }]
 		});
 
-		if (!selected) return;
+		let files;
 
-		const files = Array.isArray(selected) ? selected : [selected];
+		if (Array.isArray(selected)) {
+			files = selected;
+		} else if (selected) {
+			files = selected;
+		}
+
 		await parseFiles(files);
 	};
 
 	useEffect(() => {
 		reloadFiles();
-	}, []);
+	}, [reloadFiles]);
 
-	const fileProps = {
-		savedFiles,
+	return {
 		currentFile,
 		currentFileContent,
+		saveFiles,
+
+		setCurrentFileContent,
+
+		saveCurrentFile,
+		reloadFiles,
 		handleFileClick,
 		handleFileRemove,
-		saveCurrentFile,
+		parseFiles,
 		handleFileSelect,
 		handleFolderSelect
 	};
-
-	return (
-		<BrowserRouter>
-			<Routes>
-				<Route element={<RootLayout />}>
-					<Route path="/" element={<FileUploader {...fileProps} />} />
-					<Route path="/saved-files" element={<SavedFiles {...fileProps} />} />
-				</Route>
-			</Routes>
-		</BrowserRouter>
-	);
-}
+};

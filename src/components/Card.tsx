@@ -1,34 +1,61 @@
-import Button from './Button';
-import { DownLoadsIcon } from '../icons/DownLoadsIcon';
+// Card.jsx
+import { useState } from 'react';
 import { DeleteIcon } from '../icons/DeleteIcon';
-const Card = ({ code, onClick }: any) => {
+import PreviewModal from './PreviewModal';
+
+const Card = ({
+	fileName,
+	handleFileClick,
+	handleFileRemove,
+	currentFileContent,
+	currentFile,
+	saveCurrentFile
+}) => {
+	const [isOpen, setIsOpen] = useState(false);
+
+	const handleClose = () => {
+		setIsOpen(false);
+	};
+
+	const handleOpen = async () => {
+		// Загружаем содержимое файла при открытии
+		await handleFileClick(fileName);
+		setIsOpen(true);
+	};
+
 	return (
-		<div className="h-64 w-52 flex-1 mb-6">
+		<>
 			<div
-				className=" w-full h-full flex flex-col justify-between p-3 pb-6 rounded-3xl 
-		  bg-gray-950 border border-gray-800
-		  drop-shadow-[0_0_10px_rgba(59,130,246,0.4)]
-		  hover:scale-105
-		  hover:border-blue-700/50
-		  transition-all duration-500
-		  rounded-br-md"
+				onClick={handleOpen}
+				className="border-[1px] w-80 h-40 bg-neutral-950 border-gray-600 rounded-lg mb-4 flex flex-col cursor-pointer hover:border-blue-500 transition-colors"
 			>
-				<div onClick={onClick}>
-					<code className="text-xs text-gray-400 ">
-						{code.length > 100 ? code.slice(0, 210) + '...' : code}
-					</code>
+				<div className="p-4 flex-grow flex items-center justify-center">
+					<h3 className="text-white text-lg font-medium truncate max-w-full text-center">
+						{fileName}
+					</h3>
 				</div>
 
-				<div className="flex justify-end gap-4 text-white">
-					<Button variant="icon">
-						<DownLoadsIcon />
-					</Button>
-					<Button variant="icon">
+				<div className="p-3 flex justify-end items-center border-t border-gray-700">
+					<button
+						className="text-red-500 hover:text-red-400 transition-colors"
+						onClick={(e) => {
+							e.stopPropagation();
+							handleFileRemove(fileName);
+						}}
+					>
 						<DeleteIcon />
-					</Button>
+					</button>
 				</div>
 			</div>
-		</div>
+
+			<PreviewModal
+				isOpen={isOpen}
+				onClose={handleClose}
+				content={currentFileContent}
+				fileName={fileName}
+				saveCurrentFile={saveCurrentFile}
+			/>
+		</>
 	);
 };
 
