@@ -2,9 +2,12 @@ import Card from './Card';
 
 export const ListFiles = ({ savedFiles, reloadFiles, handleFileRemove }) => {
 	return (
-		<div className=" px-4 py-8">
-			<h2 className="text-3xl font-bold text-white mb-6">Saved Files</h2>
-			<div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+		<div className="gap-2 flex flex-col p-10">
+			<p className="text-base font-light text-white/50 ">
+				Your saved files are ready to use. Click on any files to wiew or edit its contents.{' '}
+			</p>
+
+			<div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 pt-5">
 				{savedFiles && savedFiles.length > 0 ? (
 					savedFiles.map((fileName) => (
 						<Card

@@ -2,10 +2,12 @@ import { useState, useEffect } from 'react';
 import { DeleteIcon } from '../icons/DeleteIcon';
 import PreviewModal from './PreviewModal';
 import { invoke } from '@tauri-apps/api/core';
+import { CopyIcon } from '../icons/CopyIcon';
 
 const Card = ({ fileName, reloadFiles, handleFileRemove }) => {
 	const [isOpen, setIsOpen] = useState(false);
 	const [localContent, setLocalContent] = useState('');
+	const [isCopied, setIsCopied] = useState(false);
 
 	const loadContent = async () => {
 		const content = await invoke('get_file_content', { fileName });
@@ -31,6 +33,13 @@ const Card = ({ fileName, reloadFiles, handleFileRemove }) => {
 		}
 	};
 
+	const handleCopy = async (e) => {
+		e.stopPropagation();
+		await navigator.clipboard.writeText(localContent);
+		setIsCopied(true);
+		setTimeout(() => setIsCopied(false), 2000);
+	};
+
 	useEffect(() => {
 		const loadInitialContent = async () => {
 			const content = await loadContent();
@@ -43,21 +52,39 @@ const Card = ({ fileName, reloadFiles, handleFileRemove }) => {
 		<>
 			<div
 				onClick={handleOpen}
-				className="border-[1px] w-72 h-52 bg-neutral-950 border-gray-600 rounded-lg  flex flex-col cursor-pointer hover:border-white transition-colors"
+				className="border-[1px] bg-[#121212] w-72 h-96  border-gray-600 rounded-t-2xl rounded-bl-2xl rounded-br-sm  flex flex-col cursor-pointer hover:border-blue-600 transition-colors"
 			>
-				<div className="p-3 border-b border-gray-700">
-					<h3 className="text-white text-base font-medium max-w-full">{fileName}</h3>
+				<div className="p-2 border-b border-gray-800/60 flex flex-col items-center">
+					<h3 className="text-white text-base font-light max-w-full mb-1">{fileName}</h3>
+					{/* <span className="text-white/50 text-xs">1 march 2024 at 12:00 PM</span> */}
+					<span className="text-white/50 text-xs">Last edited 14 minutes ago</span>
 				</div>
 
 				<div className="p-3 flex-grow overflow-hidden">
-					<div className="text-gray-400 text-xs font-mono line-clamp-5 overflow-hidden">
+					<div className="text-white/70 text-xs font-mono line-clamp-[15] overflow-hidden">
 						{localContent}
 					</div>
 				</div>
 
-				<div className="p-2 flex justify-end items-center border-t border-gray-700">
+				<div className="p-3 flex justify-between items-center border-t border-gray-800">
 					<button
-						className="text-red-500 hover:text-red-400 transition-colors"
+						className={`text-white/70 hover:text-white transition-colors flex items-center gap-1 ${
+							isCopied ? 'text-green-500' : ''
+						}`}
+						onClick={handleCopy}
+						title="Copy content"
+					>
+						{isCopied ? (
+							<span className="text-xs text-green-500">Copied!</span>
+						) : (
+							<>
+								<CopyIcon />
+								<span className="text-xs">Copy</span>
+							</>
+						)}
+					</button>
+					<button
+						className="text-red-500/90 hover:text-red-400 transition-colors"
 						onClick={(e) => {
 							e.stopPropagation();
 							handleFileRemove(fileName);
