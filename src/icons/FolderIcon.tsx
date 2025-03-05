@@ -3,7 +3,7 @@ export function FolderIcon() {
 		<svg xmlns="http://www.w3.org/2000/svg" width="1.5em" height="1.5em" viewBox="0 0 24 24">
 			<path
 				className="dark:fill-gray-500 fill-black"
-				d="M20 18H4V8h16m0-2h-8l-2-2H4a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2m-4 11h-2v-4h-3l4-4l4 4h-3Z"
+				d="M5 5h4l3 3h6a3 3 0 0 1 3 3v6a3 3 0 0 1-3 3H5a3 3 0 0 1-3-3V8a3 3 0 0 1 3-3m0 1a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h13a2 2 0 0 0 2-2v-6a2 2 0 0 0-2-2h-6.41l-3-3zm2 11v-2H5v-1h2v-2h1v2h2v1H8v2z"
 			></path>
 		</svg>
 	);

@@ -1,6 +1,7 @@
 import { Link, useLocation } from 'react-router-dom';
 import { useTheme } from '../hooks/useTheme';
 import { ArrowIcon, GitIcon, MoonIcon, SunIcon } from '../icons';
+import { SavedContentIcon } from '../icons/SavedContentIcon';
 
 export const Navbar = () => {
 	const { theme, toggleTheme } = useTheme();
@@ -23,7 +24,9 @@ export const Navbar = () => {
 							to="/saved-files"
 							className="text-xl dark:text-white text-black hover:text-blue-600 transition-colors flex items-center"
 						>
-							Parsed Collection
+							<button>
+								<SavedContentIcon />
+							</button>
 						</Link>
 					)}
 				</div>
