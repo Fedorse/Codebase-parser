@@ -8,3 +8,4 @@ export { ArrowIcon } from './ArrowIcon';
 export { GitIcon } from './GitIcon';
 export { MoonIcon } from './MoonIcon';
 export { SunIcon } from './SunIcon';
+export { UploadIcon } from './UploadIcon';
