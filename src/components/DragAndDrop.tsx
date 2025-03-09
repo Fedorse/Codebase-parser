@@ -1,4 +1,5 @@
 import { FolderIcon, FileIcon, UploadIcon } from '../icons';
+import { useDragAndDrop } from '../hooks/useDragAndDrop';
 
 const GridPattern = () => {
 	const columns = 41;
@@ -24,10 +25,15 @@ const GridPattern = () => {
 	);
 };
 
-export const DragAndDrop = ({ handleFileSelect, handleFolderSelect }) => {
+export const DragAndDrop = ({ handleFileSelect, handleFolderSelect, parseFiles }) => {
+	const { isDragging, files } = useDragAndDrop(parseFiles);
 	return (
 		<div className="w-1/2">
-			<div className="w-full h-full py-8 dark:text-white text-black  flex items-center justify-center border-dashed border-[1px]  dark:border-white/40 border-black/40 shadow-md hover:border-black/20 dark:hover:border-white/20 rounded-lg relative overflow-hidden group">
+			<div
+				className={`w-full h-full py-8 dark:text-white text-black  flex items-center justify-center border-dashed border-[1px] ${
+					isDragging ? 'dark:border-white/40' : 'dark:border-blue-200/20'
+				}  border-black/40 shadow-md hover:border-black/20  rounded-lg relative overflow-hidden group`}
+			>
 				<div className="absolute inset-0 [mask-image:radial-gradient(ellipse_at_center,white,transparent)]">
 					<GridPattern />
 				</div>

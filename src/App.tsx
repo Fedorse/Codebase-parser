@@ -21,17 +21,21 @@ export default function App() {
 	};
 
 	const parseFiles = async (files) => {
-		await invoke('parse_files', {
-			filePaths: files,
-			title: 'Test'
-		});
-		await reloadFiles();
+		try {
+			console.log('PARSE', files);
+			await invoke('parse', {
+				paths: files,
+				ignorePatterns: []
+			});
+			await reloadFiles();
+		} catch (err) {
+			console.error('PARSE ERROR', err);
+		}
 	};
 
 	const handleFileSelect = async () => {
 		const selected = await open({
-			multiple: true,
-			filters: [{ name: 'Text', extensions: ['txt', 'log', 'md'] }]
+			multiple: true
 		});
 
 		if (!selected) return;
@@ -43,8 +47,7 @@ export default function App() {
 	const handleFolderSelect = async () => {
 		const selected = await open({
 			multiple: true,
-			directory: true,
-			filters: [{ name: 'Text', extensions: ['txt', 'log', 'md'] }]
+			directory: true
 		});
 
 		if (!selected) return;
@@ -67,6 +70,7 @@ export default function App() {
 							<MainPage
 								handleFileSelect={handleFileSelect}
 								handleFolderSelect={handleFolderSelect}
+								parseFiles={parseFiles}
 							/>
 						}
 					/>
