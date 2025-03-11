@@ -19,16 +19,20 @@ export const ToastProvider = ({ children }) => {
 	};
 
 	const success = (message, duration) => showToast({ message, type: 'success', duration });
+	const error = (message, duration) => showToast({ message, type: 'error', duration });
+	const info = (message, duration) => showToast({ message, type: 'info', duration });
 
 	const contextValue = {
 		showToast,
 		hideToast,
-		success
+		success,
+		error,
+		info
 	};
 	return (
 		<ToastContext.Provider value={contextValue}>
 			{children}
-			<div className="fixed bottom-4 right-4 z-50">
+			<div className="fixed bottom-10 right-10 z-50">
 				{toast.map((toast) => (
 					<Toast
 						key={toast.id}

@@ -4,7 +4,7 @@ import { invoke } from '@tauri-apps/api/core';
 import { useToast } from '../hooks/useToast';
 
 export const MainPage = ({ reloadFiles }) => {
-	const { success } = useToast();
+	const { success, error } = useToast();
 
 	const parseFiles = async (files) => {
 		await invoke('parse', {

@@ -5,7 +5,7 @@ const GridPattern = ({ isDragging }) => {
 	const columns = 41;
 	const rows = 11;
 	return (
-		<div className="flex dark:bg-gray-500 bg-white flex-shrink-0 flex-wrap justify-center items-center gap-x-px gap-y-px scale-105">
+		<div className="flex dark:bg-gray-600 bg-white flex-shrink-0 flex-wrap justify-center items-center gap-x-px gap-y-px scale-105">
 			{Array.from({ length: rows }).map((_, row) =>
 				Array.from({ length: columns }).map((_, col) => {
 					const index = row * columns + col;
@@ -31,7 +31,6 @@ export const DragAndDrop = ({ parseFiles }) => {
 	const { isDragging } = useDragAndDrop(parseFiles);
 	return (
 		<div className="w-1/2 h-2/5 relative">
-			{/* Добавлен relative для ограничения абсолютно позиционированных элементов */}
 			<div
 				className={`w-full h-full flex items-center justify-center dark:text-white text-black border-dashed border-[2px] shadow-md rounded-lg overflow-hidden transition-colors duration-300 
         ${
@@ -47,7 +46,7 @@ export const DragAndDrop = ({ parseFiles }) => {
 
 				<div className="h-full flex flex-col items-center justify-center gap-10 z-10">
 					<div
-						className={`relative dark:bg-white/50 shadow-lg bg-white/90 flex items-center justify-center h-32 w-32 max-w-[8rem] rounded-md transition-all duration-300 ease-out 
+						className={`relative dark:bg-white/20 shadow-lg bg-white/90 flex items-center justify-center h-32 w-32 max-w-[8rem] rounded-md transition-all duration-300 ease-out 
             ${isDragging ? 'scale-75' : ''}`}
 					>
 						<div className="transition-opacity duration-300 ease-in-out">
