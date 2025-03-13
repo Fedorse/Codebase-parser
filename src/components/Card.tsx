@@ -1,31 +1,19 @@
-import { useState, useEffect } from 'react';
-
 import { invoke } from '@tauri-apps/api/core';
 import { DeleteIcon, CopyIcon } from '../icons';
 
-const Card = ({ fileName, reloadFiles, handleModalOpen, onCopy, isCopied }) => {
-	const [localContent, setLocalContent] = useState('');
-
-	const loadContent = async () => {
-		const content = await invoke('get_file_content', { fileName });
-		setLocalContent(content);
-	};
-	useEffect(() => {
-		loadContent();
-	}, []);
-
+const Card = ({ fileName, reloadFiles, handleModalOpen, onCopy, isCopied, data }) => {
 	const handleFileRemove = async (fileName) => {
 		await invoke('remove_file', { fileName });
 		reloadFiles();
 	};
 
 	const handleCardClick = () => {
-		handleModalOpen(fileName, localContent);
+		handleModalOpen(fileName, data[fileName]);
 	};
 
 	const handleCopyClick = async (e) => {
 		e.stopPropagation();
-		onCopy(localContent);
+		onCopy(data[fileName]);
 	};
 
 	return (
@@ -41,7 +29,7 @@ const Card = ({ fileName, reloadFiles, handleModalOpen, onCopy, isCopied }) => {
 
 				<div className="p-3 flex-grow overflow-hidden">
 					<div className="text-white/70 text-xs font-mono line-clamp-[15] overflow-hidden">
-						{localContent}
+						{data[fileName]}
 					</div>
 				</div>
 

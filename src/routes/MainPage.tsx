@@ -3,20 +3,23 @@ import GroupButtons from '../components/GroupButtons';
 import { invoke } from '@tauri-apps/api/core';
 import { useToast } from '../hooks/useToast';
 
-export const MainPage = ({ reloadFiles }) => {
+export const MainPage = () => {
 	const { success, error } = useToast();
 
 	const parseFiles = async (files) => {
-		await invoke('parse', {
-			paths: files,
-			ignorePatterns: []
-		});
-		success('Files parsed successfully!');
-
-		await reloadFiles();
+		try {
+			await invoke('parse', {
+				paths: files,
+				ignorePatterns: []
+			});
+		} catch (e) {
+			error('Failed to parse files');
+		} finally {
+			success('Files parsed successfully!');
+		}
 	};
 	return (
-		<main className="h-full flex flex-col items-center justify-center ">
+		<main className="h-full flex flex-col items-center justify-center">
 			<DragAndDrop parseFiles={parseFiles} />
 			<GroupButtons parseFiles={parseFiles} />
 		</main>

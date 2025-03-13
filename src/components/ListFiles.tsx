@@ -1,6 +1,6 @@
 import Card from './Card';
 
-export const ListFiles = ({ savedFiles, reloadFiles, handleModalOpen, onCopy, isCopied }) => {
+export const ListFiles = ({ savedFiles, reloadFiles, handleModalOpen, onCopy, isCopied, data }) => {
 	return (
 		<div className="gap-2 flex flex-col p-10 ">
 			{savedFiles.length > 0 && (
@@ -17,6 +17,7 @@ export const ListFiles = ({ savedFiles, reloadFiles, handleModalOpen, onCopy, is
 				{savedFiles && savedFiles.length > 0 ? (
 					savedFiles.map((fileName) => (
 						<Card
+							data={data}
 							key={fileName}
 							fileName={fileName}
 							reloadFiles={reloadFiles}
