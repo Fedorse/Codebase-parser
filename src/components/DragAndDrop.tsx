@@ -32,7 +32,7 @@ export const DragAndDrop = ({ parseFiles }) => {
 	return (
 		<div className="w-1/2 h-2/5 relative">
 			<div
-				className={`w-full h-full flex items-center justify-center dark:text-white text-black border-dashed border-[2px] shadow-md rounded-lg overflow-hidden transition-colors duration-300 
+				className={`w-full h-full flex items-center justify-center dark:text-white text-black borded border-[1px] shadow-md rounded-t-lg overflow-hidden transition-colors duration-300 
         ${
 					isDragging
 						? 'dark:border-blue-600 border-blue-500'

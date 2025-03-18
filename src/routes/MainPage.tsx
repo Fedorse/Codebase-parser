@@ -18,7 +18,7 @@ export const MainPage = () => {
 		}
 	};
 	return (
-		<main className="h-full flex flex-col items-center justify-center">
+		<main className="h-full flex flex-col w-full items-center justify-center">
 			<DragAndDrop parseFiles={parseFiles} />
 			<GroupButtons parseFiles={parseFiles} />
 		</main>
