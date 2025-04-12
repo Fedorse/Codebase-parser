@@ -28,4 +28,6 @@ directories = "6.0.0"
 glob = "0.3.2"
 tauri-plugin-log = "2.2.1"
 log = "0.4.26"
+globset = "0.4.16"
+dirs = "6.0.0"
 
