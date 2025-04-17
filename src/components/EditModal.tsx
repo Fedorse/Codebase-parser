@@ -1,17 +1,7 @@
-import { useState, useEffect } from 'react';
 import { CopyIcon } from '../icons';
 
-const PreviewModal = ({ isOpen, onClose, initContent, fileName, onSave, onCopy, isCopied }) => {
-	const [editContent, setEditContent] = useState('');
-
-	useEffect(() => {
-		if (initContent) {
-			setEditContent(initContent);
-		}
-	}, [initContent]);
-
+const EditModal = ({ isOpen, onClose, content, fileName, onSave, onCopy, isCopied, onEdit }) => {
 	if (!isOpen) return null;
-
 	return (
 		<div
 			className="fixed z-10 inset-0 bg-black/60 backdrop-blur-sm transition-opacity flex flex-col items-center justify-center motion-preset-expand"
@@ -30,8 +20,8 @@ const PreviewModal = ({ isOpen, onClose, initContent, fileName, onSave, onCopy, 
 
 				<div className="flex-grow bg-[#282c34] p-4 overflow-auto rounded-md">
 					<textarea
-						onChange={(e) => setEditContent(e.target.value)}
-						value={editContent}
+						onChange={(e) => onEdit(e.target.value)}
+						value={content}
 						className="w-full h-full resize-none bg-transparent text-sm font-mono text-white/80 focus:outline-none"
 					/>
 				</div>
@@ -41,7 +31,7 @@ const PreviewModal = ({ isOpen, onClose, initContent, fileName, onSave, onCopy, 
 						className={`text-white/70 hover:text-white transition-colors flex items-center gap-1 ${
 							isCopied ? 'text-green-500' : ''
 						}`}
-						onClick={() => onCopy(editContent)}
+						onClick={() => onCopy(content)}
 						title="Copy content"
 					>
 						{isCopied ? (
@@ -55,7 +45,7 @@ const PreviewModal = ({ isOpen, onClose, initContent, fileName, onSave, onCopy, 
 					</button>
 					<button
 						className="text-black text-sm rounded-md py-2 px-4 bg-white hover:bg-gray-200 transition-colors"
-						onClick={() => onSave({ editContent })}
+						onClick={() => onSave({ editText: content })}
 					>
 						Saved
 					</button>
@@ -65,4 +55,4 @@ const PreviewModal = ({ isOpen, onClose, initContent, fileName, onSave, onCopy, 
 	);
 };
 
-export default PreviewModal;
+export default EditModal;
