@@ -30,13 +30,13 @@ const GridPattern = ({ isDragging }) => {
 export const DragAndDrop = ({ parse }) => {
 	const { isDragging } = useDragAndDrop(parse);
 	return (
-		<div className="w-1/2 h-2/5 relative">
+		<div className="w-1/2 h-1/2 relative">
 			<div
-				className={`w-full h-full flex items-center justify-center dark:text-white text-black borded border-[1px] shadow-md rounded-t-lg overflow-hidden transition-colors duration-300 
+				className={`w-full h-full flex items-center justify-center dark:text-white text-black border-t-[1px] border-l-[1px] border-r-[1px]  shadow-md rounded-t-lg overflow-hidden transition-colors duration-300 
         ${
 					isDragging
-						? 'dark:border-blue-600 border-blue-500'
-						: 'dark:border-gray-600/50 border-gray-300'
+						? 'dark:border-blue-600 border-blue-500 border'
+						: 'dark:border-gray-600/50 border-gray-300  '
 				}`}
 			>
 				<div className="absolute inset-0 [mask-image:radial-gradient(ellipse_at_center,white,transparent)] pointer-events-none">
@@ -62,10 +62,10 @@ export const DragAndDrop = ({ parse }) => {
 						</h2>
 						<div className="flex items-center justify-center gap-4">
 							<div className="h-px bg-gray-300 dark:bg-gray-600 w-16 "></div>
-							<span className="text-gray-500 dark:text-gray-400">or</span>
+							{/* <span className="text-gray-500 dark:text-gray-400">or</span> */}
 							<div className="h-px bg-gray-300 dark:bg-gray-600 w-16 "></div>
 						</div>
-						<p className="text-gray-400">select a file your computer</p>
+						<p className="text-gray-400"> use the buttons below</p>
 					</div>
 				</div>
 			</div>

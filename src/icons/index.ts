@@ -10,3 +10,5 @@ export { MoonIcon } from './MoonIcon';
 export { SunIcon } from './SunIcon';
 export { UploadIcon } from './UploadIcon';
 export { OpenDocument } from './OpenDocument';
+export { ArrowDown } from './ArrowDown';
+export { ArrowUp } from './ArrowUp';
