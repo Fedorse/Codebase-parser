@@ -12,3 +12,4 @@ export { UploadIcon } from './UploadIcon';
 export { OpenDocument } from './OpenDocument';
 export { ArrowDown } from './ArrowDown';
 export { ArrowUp } from './ArrowUp';
+export { EditorIcon } from './EditorIcon';

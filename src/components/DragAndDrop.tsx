@@ -1,52 +1,68 @@
-import { FolderIcon, FileIcon, UploadIcon } from '../icons';
+import { UploadIcon } from '../icons';
 import { useDragAndDrop } from '../hooks/useDragAndDrop';
+import { useState } from 'react';
+import { usePreset } from '../hooks/usePresset';
+import { PresetForm } from '../components/PresetForm';
+import { PresetList } from '../components/PresetList';
+import { ArrowUp, ArrowDown } from '../icons';
+import { GridMask } from '../components/GridMask';
 
-const GridPattern = ({ isDragging }) => {
-	const columns = 41;
-	const rows = 11;
-	return (
-		<div className="flex dark:bg-gray-600 bg-white flex-shrink-0 flex-wrap justify-center items-center gap-x-px gap-y-px scale-105">
-			{Array.from({ length: rows }).map((_, row) =>
-				Array.from({ length: columns }).map((_, col) => {
-					const index = row * columns + col;
-					return (
-						<div
-							key={`${col}-${row}`}
-							className={`w-10 h-10 flex flex-shrink-0 rounded-[2px] transition-colors duration-300 ${
-								isDragging
-									? 'dark:bg-blue-800/30 bg-blue-200/40'
-									: index % 2 === 0
-									? 'dark:bg-gray-800/40 bg-gray-200/60'
-									: 'dark:bg-gray-800/40 bg-gray-200/60 '
-							}`}
-						/>
-					);
-				})
-			)}
-		</div>
-	);
+type Props = {
+	parse: (selected: string[]) => void;
 };
 
-export const DragAndDrop = ({ parse }) => {
+export const DragAndDrop = ({ parse }: Props) => {
+	const [showPreset, setShowPresets] = useState(false);
+
+	const { presets, selected, setSelected, form, setForm, savePreset, deletePreset, toggleForm } =
+		usePreset();
 	const { isDragging } = useDragAndDrop(parse);
 	return (
-		<div className="w-1/2 h-1/2 relative">
+		<div className="w-full max-w-3xl  relative">
 			<div
-				className={`w-full h-full flex items-center justify-center dark:text-white text-black border-t-[1px] border-l-[1px] border-r-[1px]  shadow-md rounded-t-lg overflow-hidden transition-colors duration-300 
+				className={`w-full min-h-[300px] sm:min-h-[400px] dark:text-white text-black border-t-[1px] 
+					border-l-[1px] border-r-[1px]  shadow-md rounded-t-lg  transition-colors duration-300 
         ${
 					isDragging
 						? 'dark:border-blue-600 border-blue-500 border'
-						: 'dark:border-gray-600/50 border-gray-300  '
+						: 'dark:border-gray-600/50 border-gray-300'
 				}`}
 			>
 				<div className="absolute inset-0 [mask-image:radial-gradient(ellipse_at_center,white,transparent)] pointer-events-none">
-					<GridPattern isDragging={isDragging} />
+					<GridMask isDragging={isDragging} />
+				</div>
+				<div className="z-50 relative">
+					<button
+						onClick={() => setShowPresets(!showPreset)}
+						className={`flex flex-col dark:hover:bg-gray-800 hover:bg-gray-300  dark:text-white text-black rounded-md px-4 py-2 
+							${showPreset ? 'bg-gray-300 dark:bg-gray-800' : 'bg-white dark:bg-gray-900'}
+						}`}
+					>
+						<div className="flex items-center gap-2">
+							Preset {showPreset ? <ArrowDown /> : <ArrowUp />}
+						</div>
+						<span className="text-xs text-black/60 dark:text-white/60">
+							{selected || 'No preset'}
+						</span>
+					</button>
+
+					{showPreset && (
+						<div className="absolute left-0 top-full mt-2 w-[90vw] max-w-[300px]  dark:bg-gray-900  bg-white  border dark:border-slate-600  rounded-md shadow-lg z-50 p-4">
+							<PresetForm form={form} onSave={savePreset} onToggle={toggleForm} setForm={setForm} />
+							<PresetList
+								presets={presets}
+								setSelected={setSelected}
+								selected={selected}
+								onDelete={deletePreset}
+							/>
+						</div>
+					)}
 				</div>
 
-				<div className="h-full flex flex-col items-center justify-center gap-10 z-10">
+				<div className=" flex flex-col items-center justify-center gap-6 mt-4 sm:mt-10 z-10">
 					<div
-						className={`relative dark:bg-white/20 shadow-lg bg-white/90 flex items-center justify-center h-32 w-32 max-w-[8rem] rounded-md transition-all duration-300 ease-out 
-            ${isDragging ? 'scale-75' : ''}`}
+						className={`relative dark:bg-white/20 bg-white shadow-lg flex items-center justify-center h-28 w-28 sm:h-32 sm:w-32 rounded-md transition-all duration-300 ease-out 
+							${isDragging ? 'scale-75' : ''}`}
 					>
 						<div className="transition-opacity duration-300 ease-in-out">
 							<UploadIcon />
@@ -56,13 +72,14 @@ export const DragAndDrop = ({ parse }) => {
 							></div>
 						</div>
 					</div>
-					<div className="text-center">
+
+					<div className="text-center z-10">
 						<h2 className="text-xl dark:text-white text-black font-medium">
 							Drag and drop files here
 						</h2>
 						<div className="flex items-center justify-center gap-4">
 							<div className="h-px bg-gray-300 dark:bg-gray-600 w-16 "></div>
-							{/* <span className="text-gray-500 dark:text-gray-400">or</span> */}
+
 							<div className="h-px bg-gray-300 dark:bg-gray-600 w-16 "></div>
 						</div>
 						<p className="text-gray-400"> use the buttons below</p>

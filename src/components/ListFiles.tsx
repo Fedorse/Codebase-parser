@@ -2,7 +2,7 @@ import Card from './Card';
 
 export const ListFiles = ({ savedFiles, onOpen, onCopy, isCopied, handleDelete, onRename }) => {
 	return (
-		<div className="gap-2 flex flex-col p-10 ">
+		<div className="gap-2 flex flex-col sm:p-10 p-2 ">
 			{savedFiles.length > 0 && (
 				<>
 					<h3 className="text-2xl font-light dark:text-white text-black motion-opacity-in-0 motion-translate-z-in--50 motion-perspective-in motion-duration-700">
