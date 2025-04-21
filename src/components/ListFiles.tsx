@@ -1,6 +1,6 @@
 import Card from './Card';
 
-export const ListFiles = ({ savedFiles, onOpen, onCopy, isCopied, handleDelete, onRename }) => {
+export const ListFiles = ({ savedFiles, onOpen, handleDelete, onRename }) => {
 	return (
 		<div className="gap-2 flex flex-col sm:p-10 p-2 ">
 			{savedFiles.length > 0 && (
@@ -21,8 +21,6 @@ export const ListFiles = ({ savedFiles, onOpen, onCopy, isCopied, handleDelete, 
 							{...file}
 							key={file.path}
 							onOpen={() => onOpen(file)}
-							onCopy={onCopy}
-							isCopied={isCopied}
 							onRename={onRename}
 						/>
 					))

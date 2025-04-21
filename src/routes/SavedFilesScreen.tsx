@@ -42,7 +42,7 @@ const SavedFilesScreen = () => {
 	};
 
 	const handleCopy = async (content: string) => {
-		await navigator.clipboard.writeText(content);
+		await navigator.clipboard.writeText(openFile.content);
 		setIsCopied(true);
 		setTimeout(() => setIsCopied(false), 2000);
 	};
@@ -93,8 +93,8 @@ const SavedFilesScreen = () => {
 			<ListFiles
 				savedFiles={files}
 				onOpen={handleOpenFile}
-				onCopy={handleCopy}
-				isCopied={isCopied}
+
+
 				handleDelete={deleteByPath}
 				onRename={handleRenameFile}
 			/>

@@ -10,24 +10,12 @@ type Props = {
 	size: number;
 	path: string;
 	onOpen: () => void;
-	onCopy: (content: string) => void;
-	isCopied: boolean;
 	preview: string;
 	onDelete: (path: string) => void;
 	onRename: (path: string, newName: string) => void;
 };
 
-const Card = ({
-	name,
-	size,
-	path,
-	onOpen,
-	onCopy,
-	isCopied,
-	preview,
-	onDelete,
-	onRename
-}: Props) => {
+const Card = ({ name, size, path, onOpen, preview, onDelete, onRename }: Props) => {
 	const [newName, setNewName] = useState<string>('');
 	const [renamingFile, setRenamingFile] = useState<string | null>(null);
 
@@ -45,11 +33,6 @@ const Card = ({
 			onRename(path, newName);
 		}
 		setRenamingFile(null);
-	};
-
-	const handleCopyClick = async (e) => {
-		e.stopPropagation();
-		onCopy(path);
 	};
 
 	const handleOpenDir = async (path: string) => {
@@ -126,28 +109,11 @@ const Card = ({
 				</div>
 
 				<div className="p-3 flex w-full justify-between items-center border-t border-gray-200 dark:border-gray-800">
-					<div className="flex gap-4 items-center">
-						<button
-							className={`dark:text-white/70 text-black/70 hover:text-black dark:hover:text-white transition-colors flex items-center gap-1 ${
-								isCopied ? 'text-green-500' : ''
-							}`}
-							onClick={handleCopyClick}
-							title="Copy content"
-						>
-							{isCopied ? (
-								<span className="text-xs text-green-500">Copied!</span>
-							) : (
-								<>
-									<CopyIcon />
-									<span className="text-xs">Copy</span>
-								</>
-							)}
-						</button>
+					<div className="flex ml-2 items-center">
+						<span className="dark:text-white/70 text-black/70 text-xs">{formatFileSize(size)}</span>
 					</div>
 
 					<div className="flex gap-3 items-center">
-						<span className="dark:text-white/70 text-black/70 text-xs">{formatFileSize(size)}</span>
-
 						<button
 							className="text-sm text-black dark:text-white"
 							onClick={(e) => {
