@@ -2,6 +2,7 @@ import { invoke } from '@tauri-apps/api/core';
 import { DeleteIcon, CopyIcon, OpenDocument, EditorIcon } from '../icons';
 import { formatFileSize } from '../utils/formatFileSize.ts';
 import { useState } from 'react';
+import { Tooltip } from './Tooltip';
 
 const THIRTY_MB_SIZE = 30 * 1024 * 1024;
 
@@ -114,15 +115,18 @@ const Card = ({ name, size, path, onOpen, preview, onDelete, onRename }: Props) 
 					</div>
 
 					<div className="flex gap-3 items-center">
-						<button
-							className="text-sm text-black dark:text-white"
-							onClick={(e) => {
-								e.stopPropagation();
-								handleOpenDir(path);
-							}}
-						>
-							<OpenDocument />
-						</button>
+						<Tooltip text="Open file in folder">
+							<button
+								className="text-sm text-black flex dark:text-white"
+								onClick={(e) => {
+									e.stopPropagation();
+									handleOpenDir(path);
+								}}
+							>
+								<OpenDocument />
+							</button>
+						</Tooltip>
+
 						<button
 							className="text-red-600 dark:text-red-400 flex self-end hover:text-red-400 transition-colors"
 							onClick={(e) => {
