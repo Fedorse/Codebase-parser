@@ -2,7 +2,7 @@ import { invoke } from '@tauri-apps/api/core';
 import { DeleteIcon, CopyIcon, OpenDocument, EditorIcon } from '../icons';
 import { formatFileSize } from '../utils/formatFileSize.ts';
 import { useState } from 'react';
-import { Tooltip } from './Tooltip';
+import { Tooltip } from './Tooltip.tsx';
 
 const THIRTY_MB_SIZE = 30 * 1024 * 1024;
 
