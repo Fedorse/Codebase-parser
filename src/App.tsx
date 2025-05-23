@@ -1,9 +1,8 @@
 import { BrowserRouter, Routes, Route } from 'react-router-dom';
-import RootLayout from './layouts/RootLoyaout';
-
-import MainPage from './routes/MainPage';
-import SavedFilesPage from './routes/SavedFilesPage';
 import { ToastProvider } from './context/ToastContext';
+import RootLayout from './layouts/RootLoyaout';
+import MainScreen from './routes/MainScreen';
+import SavedFilesScreen from './routes/SavedFilesScreen';
 
 export default function App() {
 	return (
@@ -11,8 +10,8 @@ export default function App() {
 			<BrowserRouter>
 				<Routes>
 					<Route element={<RootLayout />}>
-						<Route path="/" element={<MainPage />} />
-						<Route path="/saved-files" element={<SavedFilesPage />} />
+						<Route path="/" element={<MainScreen />} />
+						<Route path="/saved-files" element={<SavedFilesScreen />} />
 					</Route>
 				</Routes>
 			</BrowserRouter>
