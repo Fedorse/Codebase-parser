@@ -1,7 +1,0 @@
-{
-  "Git": [".git", ".gitignore"],
-  "JS": [".git", ".gitignore", "node_modules", "build", ".next"],
-  "Java": [".git", ".gitignore", ".maven", "target", "out"],
-  "Python": [".git", ".gitignore", "__pycache__", "venv", ".pytest_cache"],
-  "Rust": [".git", ".gitignore", "target", "Cargo.lock"]
-}

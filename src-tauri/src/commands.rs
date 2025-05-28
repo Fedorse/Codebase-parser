@@ -1,66 +1,33 @@
 use std::fs::{self, File};
-use std::fmt;
 use std::io::Write;
 use std::path::PathBuf;
 use std::process::Command;
-use serde::{Deserialize, Serialize};
 use anyhow::{self, Result};
 
 use crate::utils::{self, FilePreview};
-use crate::consts::{PRESETS_FILE_NAME, PARSED_FILES_DIR};
+use crate::consts::{PARSED_FILES_DIR};
+use crate::error::CommandError;
 
-#[derive(Debug, Serialize, Deserialize)]
-pub struct CommandError {
-    message: String,
-}
+#[tauri::command]
+pub fn parse(paths: Vec<String>) -> Result<(), CommandError> {
+    let mut output_file = utils::create_output_file()?;
+    utils::write_parsed_files(paths, &mut output_file)?;
 
-impl fmt::Display for CommandError {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "{}", self.message)
-    }
-}
-
-impl From<anyhow::Error> for CommandError {
-    fn from(err: anyhow::Error) -> Self {
-        Self {
-            message: err.to_string(),
-        }
-    }
-}
-
-impl From<std::io::Error> for CommandError {
-    fn from(err: std::io::Error) -> Self {
-        Self {
-            message: err.to_string(),
-        }
-    }
-}
-
-
-impl From<String> for CommandError {
-    fn from(err: String) -> Self {
-        Self {
-            message: err.to_string(),
-        }
-    }
-}
-
-impl From<&str> for CommandError {
-    fn from(err: &str) -> Self {
-        Self {
-            message: err.to_string(),
-        }
-    }
+    Ok(())
 }
 
 #[tauri::command]
-pub fn parse(paths: Vec<String>, ignore_patterns: Vec<String>) -> Result<(), CommandError> {
-    let mut output_file = utils::create_output_file()?;
-    let parsed_paths = utils::parse_paths(paths, ignore_patterns)?;
+pub fn get_preview_tree(paths: Vec<String>) -> Result<Vec<utils::ParsedPath>, CommandError> {
+    let mut result = Vec::new();
 
-    utils::write_parsed_files(parsed_paths, &mut output_file)?;
+    for input in paths {
+        let path = PathBuf::from(input);
+        if path.exists() {
+            result.push(utils::build_file_tree(&path)?);
+        }
+    }
 
-    Ok(())
+    Ok(result)
 }
 
 #[tauri::command]
@@ -86,14 +53,6 @@ pub fn get_file_content(file_path: String) -> Result<String, CommandError> {
 }
 
 #[tauri::command]
-pub fn get_presets() -> Result<String, CommandError> {
-    let presets_file = utils::get_app_dir()?.join(PRESETS_FILE_NAME);
-    let presets = fs::read_to_string(presets_file)?;
-
-    Ok(presets)
-}
-
-#[tauri::command]
 pub fn update_file(file_path: String, content: String) -> Result<(), CommandError> {
     let mut file = File::create(file_path)?;
     file.write_all(content.as_bytes())?;
@@ -115,26 +74,6 @@ pub fn rename_file(file_path: String, new_name: String) -> Result<(), CommandErr
 pub fn delete_file(path: String) -> Result<(), CommandError> {
     let file_path = utils::get_app_dir()?.join(PARSED_FILES_DIR).join(path);
     fs::remove_file(file_path)?;
-
-    Ok(())
-}
-
-#[tauri::command]
-pub fn update_preset(name: String, ignore_patterns: Vec<String>) -> Result<(), CommandError> {
-    let mut presets = utils::get_presets_map()?;
-
-    presets.insert(name, ignore_patterns);
-    utils::write_presets(&presets)?;
-
-    Ok(())
-}
-
-#[tauri::command]
-pub fn delete_preset(name: String) -> Result<(), CommandError> {
-    let mut presets = utils::get_presets_map()?;
-
-    presets.remove(&name);
-    utils::write_presets(&presets)?;
 
     Ok(())
 }

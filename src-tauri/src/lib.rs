@@ -2,6 +2,7 @@
 pub mod utils;
 pub mod commands;
 pub mod consts;
+pub mod error;
 
 use tauri_plugin_log;
 
@@ -16,6 +17,7 @@ pub fn run() {
         .plugin(tauri_plugin_opener::init())
         .plugin(tauri_plugin_log::Builder::new().build())
         .invoke_handler(tauri::generate_handler![
+            commands::get_preview_tree,
             commands::parse,
             commands::get_files,
             commands::get_file_content,
@@ -23,10 +25,7 @@ pub fn run() {
             commands::open_in_default_editor,
             commands::delete_file,
             commands::rename_file,
-            commands::update_preset,
-            commands::delete_preset,
-            commands::get_presets,
-            commands::open_in_folder
+            commands::open_in_folder,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
