@@ -85,7 +85,7 @@ $effect(()=>{
       <Resizable.Pane>
         <Card.Root>
           <Card.Header>
-            <Card.Title>{savedFiles[1].name}</Card.Title>
+            <Card.Title>fsdaf</Card.Title>
             <Card.Description>Card Description</Card.Description>
           </Card.Header>
           <Card.Content>
