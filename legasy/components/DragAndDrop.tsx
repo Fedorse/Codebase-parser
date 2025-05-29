@@ -1,10 +1,10 @@
 import { useState } from 'react';
 import { useDragAndDrop } from '../hooks/useDragAndDrop';
 import { usePreset } from '../hooks/usePresset';
-import { PresetForm } from '../components/PresetForm';
-import { PresetList } from '../components/PresetList';
+import { PresetForm } from './PresetForm';
+import { PresetList } from './PresetList';
 import { ArrowUp, ArrowDown, UploadIcon } from '../icons';
-import { GridMask } from '../components/GridMask';
+import { GridMask } from './GridMask';
 import { useClickOutside } from '../hooks/useClickOutside';
 import { AnimatePresence, motion } from 'framer-motion';
 import { variants } from '../animation/seletct';
