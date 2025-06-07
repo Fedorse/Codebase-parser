@@ -35,9 +35,11 @@
     <li class="flex items-center gap-2 pt-1">
       <Checkbox  bind:checked={node.selected} onCheckedChange={onToggle}  />
       <div
-      class="flex items-center gap-2 pt-1"
-      class:text-accent={!node.selected}
-      class:text-white={node.selected}
+      class={{
+        'flex items-center gap-2': true,         
+        'text-white ': node.selected,
+        'text-accent': !node.selected           
+      }}
     >
         <FileIcon  class="size-5" />
         <Label >{node.name}</Label>
@@ -53,10 +55,13 @@
         <ChevronRight class="size-4 transition-transform duration-200 group-data-[state=open]/collapsible:rotate-90" />
         <Checkbox bind:checked={node.selected} onCheckedChange={onToggle} onclick={(e)=>e.stopPropagation()}
         />
-        <div class="flex items-center gap-2 pt-1"
-              class:text-accent={!node.selected}
-              class:text-white={node.selected}
-        >
+        <div
+        class={{
+          'flex items-center gap-2': true,
+          'text-white ': node.selected,  
+          'text-accent': !node.selected           
+        }}
+      >
 
           <FolderIcon class="size-6" />
           <Label class="select-none cursor-pointer flex-1">

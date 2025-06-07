@@ -8,6 +8,17 @@
   import * as Dialog from "$lib/components/ui/dialog/index.js";
   import FileTreeItem from "$lib/components/FileTreeItem.svelte";
   import {invoke} from '@tauri-apps/api/core';
+  import {getCurrentWebview} from '@tauri-apps/api/webview';
+
+	import { onMount } from 'svelte';
+
+
+
+  type DragEventPayload = {
+	type: 'over' | 'drop' | 'leave' | 'enter';
+	position: { x: number; y: number };
+	paths: string[];
+};
 
   type FileTreeNode = {
   name: string;
@@ -29,9 +40,75 @@ type FilePreview = {
 
 let filePrewiews = $state<FilePreview[]>([])
 let filesTreeNodes = $state<FileTreeNode[]>([])
+
 let isDialogOpen = $state(true)
+let isDragging = $state(false)
 
 
+
+let unlistenDrag : () => void
+
+
+onMount(async () => {
+    try {
+      const webview = await getCurrentWebview();
+      
+      // Listen for drag and drop events
+      unlistenDrag = await webview.onDragDropEvent((event) => {
+        const { type, paths } = event.payload as DragEventPayload;
+        
+        switch (type) {
+          case 'enter':
+
+            isDragging = true;
+            break;
+            
+          case 'over':
+            // Handle drag over if needed
+            break;
+            
+          case 'leave':
+
+
+              isDragging = false;
+
+            break;
+            
+          case 'drop':
+            isDragging = false;
+            handleDroppedFiles(paths);
+            break;
+            
+          default:
+            console.warn(`Unknown drag event type: ${type}`);
+        }
+      });
+
+
+    } catch (error) {
+      console.error('Failed to initialize drag and drop:', error);
+    }
+
+    // Cleanup function
+    return () => {
+      if (unlistenDrag) {
+        unlistenDrag();
+      }
+    };
+  });
+
+
+const handleDroppedFiles = async (paths: string[]) => {
+  try {
+    if(paths.length === 0) return 
+    const tree = await invoke<FileTreeNode[]>('get_preview_tree', {paths}) 
+    selectAllNodes(tree)
+    filesTreeNodes = tree
+    isDialogOpen = true
+  }catch(err) {
+    console.error('Failed to prosses dropped files:', err)
+  }
+}
 
 
 const laodFiles = async () => {
@@ -122,7 +199,7 @@ $effect(()=>{
 </script>
 
 <main class='w-full h-full flex items-center justify-center flex-col'>
-        <div class="bg-card h-full p-4">
+        <div class="bg-card h-full p-4" class:bg-gray-300={isDragging}>
           <div class='border border-muted border-dashed h-1/2  bg-black  w-full flex flex-col items-center justify-center  rounded-sm'>
           <p>drag and drop files here</p>
         </div>
