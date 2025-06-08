@@ -24,7 +24,7 @@
   name: string;
   path:string;
   type: 'File' | 'Directory',
-  selected?: boolean,
+  selected?: true,
   children?: FileTreeNode[]
 }
 
@@ -52,28 +52,17 @@ let unlistenDrag : () => void
 onMount(async () => {
     try {
       const webview = await getCurrentWebview();
-      
-      // Listen for drag and drop events
+    
       unlistenDrag = await webview.onDragDropEvent((event) => {
         const { type, paths } = event.payload as DragEventPayload;
         
         switch (type) {
           case 'enter':
-
             isDragging = true;
             break;
-            
-          case 'over':
-            // Handle drag over if needed
-            break;
-            
           case 'leave':
-
-
               isDragging = false;
-
             break;
-            
           case 'drop':
             isDragging = false;
             handleDroppedFiles(paths);
@@ -89,7 +78,6 @@ onMount(async () => {
       console.error('Failed to initialize drag and drop:', error);
     }
 
-    // Cleanup function
     return () => {
       if (unlistenDrag) {
         unlistenDrag();
@@ -198,18 +186,41 @@ $effect(()=>{
 
 </script>
 
-<main class='w-full h-full flex items-center justify-center flex-col'>
-        <div class="bg-card h-full p-4" class:bg-gray-300={isDragging}>
-          <div class='border border-muted border-dashed h-1/2  bg-black  w-full flex flex-col items-center justify-center  rounded-sm'>
-          <p>drag and drop files here</p>
-        </div>
-    <div class="pt-3 gap-2 flex justify-center items-center">
-      <Separator orientation='vertical' />
-      <Button variant="outline" onclick={()=> handleOpenFiles(true)}>
-        <FolderInput class="mr-2 size-4"  />
-        Upload Folder
-      </Button>
-        </div>
+<main class=''>
+        <div 
+          class = {{
+            "bg-card h-full p-4 transition-colors duration-200  " : true,
+            "bg-blue-50 border-blue-300": isDragging
+          }}
+        >
+          <div 
+          class={{
+            "border border-muted border-dashed flex flex-col items-center justify-center rounded-sm space-y-20 p-20": true,
+            "border-sidebar border-2 bg-slate-100": isDragging,
+            "bg-muted": !isDragging
+          }}>
+            {#if isDragging}
+              <div class="text-center">
+                <div class="text-4xl mb-2">📂</div>
+                <p class="text-lg font-medium text-card">Drop files here to parse</p>
+                <p class="text-sm text-card">Release to select files</p>
+              </div>
+            {:else}
+              <div class="text-center">
+                <div class="text-4xl mb-2">📁</div>
+                <p class="">Drag and drop files here</p>
+                <p class="text-sm text-muted-foreground mt-1">or use the button below</p>
+              </div>
+              
+            {/if}
+            <div class="">
+              <Button variant="outline" onclick={()=> handleOpenFiles(true)}>
+                <FolderInput class="mr-2 size-4" />
+                Upload Files
+              </Button>
+            </div>
+          </div>
+          
     </div>
         <div class='grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 pt-10'>
           {#each filePrewiews as file (file.path)}
@@ -235,16 +246,18 @@ $effect(()=>{
         <Dialog.Header>
           <Dialog.Title>Select to parse files</Dialog.Title>
           <Dialog.Description>
-            Make changes to your profile here. Click parse when you're done.
+            Choose which files you want to parse. All files are select by default.
           </Dialog.Description>        
         </Dialog.Header>
-          <ul class="mt-4 flex  space-y-1 text-sm w-full overflow-y-auto h-full ">
+          <ul class="mt-4 flex-1 pr-2 space-y-1 text-sm w-full overflow-y-auto h-full ">
             {#each filesTreeNodes as node (node.path)}
               <FileTreeItem {node}/>
             {/each}
           </ul>
-        <div class="flex justify-end">
-          <Button onclick={parseSelectedNodes}>Parse</Button>
+          <Separator orientation='horizontal' />
+          <div class="flex justify-between ">
+            <Button onclick={()=> selectAllNodes(filesTreeNodes)}>Select All</Button>
+          <Button onclick={parseSelectedNodes}>Parse </Button>
         </div>
       </Dialog.Content>
     </Dialog.Root>
