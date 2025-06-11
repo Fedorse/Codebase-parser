@@ -7,7 +7,7 @@
   
   <div class="flex flex-col h-screen">
 	<NavBar />
-	<main class="flex-1 flex justify-center items-center p-4">
+	<main class="flex-1 flex p-4">
 		<ModeWatcher />
 	  {@render children?.()}
 	</main>

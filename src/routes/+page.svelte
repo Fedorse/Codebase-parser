@@ -109,7 +109,7 @@ const parseSelectedNodes = async () => {
     filesTreeNodes = [];
   } catch(err) {
     console.error('Parse failed:', err)
-  } finally {
+  }finally {
     isLoading = false
   }
 };
@@ -145,7 +145,7 @@ const handleOpenFiles = async (selectDir: boolean) => {
 
 
 
-<main class=''>
+<main class='flex flex-col items-center justify-center w-full'>
         <div 
           class = {{
             "bg-card p-4 rounded-sm " : true,
@@ -188,7 +188,7 @@ const handleOpenFiles = async (selectDir: boolean) => {
     </div>
     {#if filesTreeNodes.length > 0}
     <Dialog.Root open={isDialogOpen} onOpenChange={(v) => (isDialogOpen = v)}>
-      <Dialog.Content class='w-full flex flex-col  h-[70%]' >
+      <Dialog.Content class='w-[60vw] flex flex-col  h-[70%]' >
         <Dialog.Header>
           <Dialog.Title>Select to parse files</Dialog.Title>
           <Dialog.Description>
