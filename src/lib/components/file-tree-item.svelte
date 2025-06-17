@@ -5,7 +5,7 @@
     import FolderIcon from '@lucide/svelte/icons/folder';
     import ChevronRight from '@lucide/svelte/icons/chevron-right';
     import * as Collapsible from '$lib/components/ui/collapsible';
-    import Self from '$lib/components/FileTreeItem.svelte';
+    import Self from '$lib/components/file-tree-item.svelte';
 
     type FileTreeNode = {
     name: string;

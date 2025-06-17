@@ -4,7 +4,7 @@
   import FolderInput from '@lucide/svelte/icons/folder-input'
   import {Separator} from '$lib/components/ui/separator/index'
   import * as Dialog from "$lib/components/ui/dialog/index.js";
-  import FileTreeItem from "$lib/components/FileTreeItem.svelte";
+  import FileTreeItem from "$lib/components/file-tree-item.svelte";
   import {invoke} from '@tauri-apps/api/core';
   import {getCurrentWebview} from '@tauri-apps/api/webview';
 	import { onMount } from 'svelte';

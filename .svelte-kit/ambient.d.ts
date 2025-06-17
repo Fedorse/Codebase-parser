@@ -37,7 +37,6 @@ declare module '$env/static/private' {
 	export const HOMEBREW_REPOSITORY: string;
 	export const npm_config_global_prefix: string;
 	export const TERM_PROGRAM_VERSION: string;
-	export const ZDOTDIR: string;
 	export const TAURI_CLI_VERBOSITY: string;
 	export const ORIGINAL_XDG_CURRENT_DESKTOP: string;
 	export const MallocNanoZone: string;
@@ -54,7 +53,6 @@ declare module '$env/static/private' {
 	export const npm_config_globalconfig: string;
 	export const SSH_AUTH_SOCK: string;
 	export const __CF_USER_TEXT_ENCODING: string;
-	export const VSCODE_PROFILE_INITIALIZED: string;
 	export const npm_execpath: string;
 	export const TAURI_ENV_PLATFORM: string;
 	export const npm_config_verify_deps_before_run: string;
@@ -63,7 +61,6 @@ declare module '$env/static/private' {
 	export const npm_package_json: string;
 	export const LaunchInstanceID: string;
 	export const __CFBundleIdentifier: string;
-	export const USER_ZDOTDIR: string;
 	export const TAURI_ENV_PLATFORM_VERSION: string;
 	export const TAURI_ENV_FAMILY: string;
 	export const npm_config_init_module: string;
@@ -83,7 +80,6 @@ declare module '$env/static/private' {
 	export const npm_config_node_gyp: string;
 	export const npm_package_version: string;
 	export const XPC_SERVICE_NAME: string;
-	export const VSCODE_INJECTION: string;
 	export const SHLVL: string;
 	export const HOME: string;
 	export const VSCODE_GIT_ASKPASS_MAIN: string;
@@ -146,7 +142,6 @@ declare module '$env/dynamic/private' {
 		HOMEBREW_REPOSITORY: string;
 		npm_config_global_prefix: string;
 		TERM_PROGRAM_VERSION: string;
-		ZDOTDIR: string;
 		TAURI_CLI_VERBOSITY: string;
 		ORIGINAL_XDG_CURRENT_DESKTOP: string;
 		MallocNanoZone: string;
@@ -163,7 +158,6 @@ declare module '$env/dynamic/private' {
 		npm_config_globalconfig: string;
 		SSH_AUTH_SOCK: string;
 		__CF_USER_TEXT_ENCODING: string;
-		VSCODE_PROFILE_INITIALIZED: string;
 		npm_execpath: string;
 		TAURI_ENV_PLATFORM: string;
 		npm_config_verify_deps_before_run: string;
@@ -172,7 +166,6 @@ declare module '$env/dynamic/private' {
 		npm_package_json: string;
 		LaunchInstanceID: string;
 		__CFBundleIdentifier: string;
-		USER_ZDOTDIR: string;
 		TAURI_ENV_PLATFORM_VERSION: string;
 		TAURI_ENV_FAMILY: string;
 		npm_config_init_module: string;
@@ -192,7 +185,6 @@ declare module '$env/dynamic/private' {
 		npm_config_node_gyp: string;
 		npm_package_version: string;
 		XPC_SERVICE_NAME: string;
-		VSCODE_INJECTION: string;
 		SHLVL: string;
 		HOME: string;
 		VSCODE_GIT_ASKPASS_MAIN: string;
