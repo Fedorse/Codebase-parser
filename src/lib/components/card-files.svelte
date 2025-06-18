@@ -27,12 +27,6 @@
     let rename = $state<string | null>(null)
     let isDeleteDialogOpen = $state(false)
 
-    $effect(() => {
-      console.log('rename', rename)
-      console.log('newName', newName)
-    })
-
-
     const startRename = () => {
       rename = file.path
       newName = file.name
@@ -51,6 +45,7 @@
         try {
             await invoke('rename_file', { filePath: file.path, newName: newName })
             file.name = newName
+            file.path = file.path.replace(/[^\\/]+$/, newName);
             rename = null
             newName = ''
         } catch (err) {

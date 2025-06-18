@@ -5,11 +5,25 @@
     import Badge from "$lib/components/ui/badge/badge.svelte";
 
 
-    let {fileContent,
+    let {
+    fileContent,
     selectedFile,
-    updateFileContent,handleCopy, 
-    isCopied,
-    isCodeDialogOpen=$bindable(false)} = $props()
+    updateFileContent, 
+    isCodeDialogOpen=$bindable(false)
+} = $props()
+
+    let isCopied = $state(false)
+
+const handleCopy = async (content: string) => {
+        try {
+            await navigator.clipboard.writeText(content);
+            isCopied = true
+            setTimeout(()=> isCopied = false, 2000)
+        } catch (err) {
+            console.error('Failed to copy content:', err);
+        }
+
+    }
 
 </script>
 

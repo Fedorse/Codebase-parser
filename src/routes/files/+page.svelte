@@ -15,10 +15,7 @@
     let isCodeDialogOpen = $state(false);
     let fileContent = $state<string>('');
     let selectedFile = $state<SavedFiles | null>(null);
-    let isCopied = $state(false);
 
-
-    
 
     const openDialogCode = async (file: SavedFiles)=>{
         selectedFile = file
@@ -63,18 +60,6 @@
     }
     
 
-    const handleCopy = async (content: string) => {
-        try {
-            await navigator.clipboard.writeText(content);
-            isCopied = true
-            setTimeout(()=> isCopied = false, 2000)
-        } catch (err) {
-            console.error('Failed to copy content:', err);
-        }
-
-    }
-
-
     $effect(() => {
         loadFiles()
     })
@@ -98,17 +83,15 @@
         {#each savedFiles as file (file.path)}
         <CardFiles       
         {file}
-        handleDelete={handleDelete} 
-        openDialogCode={openDialogCode} 
+        {handleDelete} 
+        {openDialogCode} 
         />
       {/each}
       </div>
         <EditModal 
-            fileContent={fileContent} 
-            selectedFile={selectedFile} 
-            isCopied={isCopied} 
+            {fileContent} 
+            {selectedFile} 
             {updateFileContent}
-            {handleCopy}
             bind:isCodeDialogOpen
           />
 </div>
