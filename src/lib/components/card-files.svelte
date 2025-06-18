@@ -7,6 +7,7 @@
     import {formatFileSize} from '$lib/utils'
     import * as AlertDialog from "$lib/components/ui/alert-dialog/index.js";
     import {invoke} from '@tauri-apps/api/core';
+    import * as Tooltip from "$lib/components/ui/tooltip/index.js";
 
     const THIRTY_MB_SIZE = 30 * 1024 * 1024;
 
@@ -39,6 +40,13 @@
         openDialogCode(file)
       }
     }
+
+
+    const savedNameEvent = (e: KeyboardEvent) => {
+      if(e.key === 'Enter') handleRename(file)
+      else if(e.key === 'Escape') rename = null;
+    }
+
 
     const handleRename = async (file: SavedFiles) => {
         if(!newName || newName === file.name) return
@@ -74,25 +82,31 @@
 
 <Card.Root class='max-w-sm w-full bg-muted/30'>
     <Card.Header>
-      <Card.Title class='flex items-center gap-4 justify-between' >
-          {#if rename === file.path}
-          <Input class='flex-1' 
-          autofocus  
-          bind:value={newName}  
-          onkeydown={(e) => {
-              if(e.key === 'Enter') handleRename(file)
-              else if(e.key === 'Escape') rename = null;
-          }}
-          onblur={()=>{
-              handleRename(file)
-              rename = null
-              }}
-      />
-          <Button type='button' variant='default' size='sm' onclick={()=>{handleRename(file)}}>Saved</Button>
-          {:else}
-        <span class="flex-1 max-w-64 truncate" onclick={startRename}>{file.name} </span>
-          {/if}
-      </Card.Title>
+        <Tooltip.Root>
+          <Tooltip.Trigger>
+            <Card.Title class='flex items-center gap-4 justify-between' >
+                {#if rename === file.path}
+                <Input class='flex-1' 
+                autofocus  
+                bind:value={newName}  
+                onkeydown={(e) => {
+                    savedNameEvent(e)
+                }}
+                onblur={()=>{
+                    handleRename(file)
+                    rename = null
+                    }}
+                />
+                <Button type='button' variant='default' size='sm' onclick={()=>{handleRename(file)}}>Saved</Button>
+                {:else}
+              <span  class="flex-1 max-w-64 truncate text-left" onclick={startRename}>{file.name} </span>
+                {/if}
+            </Card.Title>
+          </Tooltip.Trigger>
+          <Tooltip.Content>
+              <p>Rename file</p>
+          </Tooltip.Content>
+        </Tooltip.Root>
       <Card.Description >
           <Badge variant='outline' class='text-muted-foreground'>
               {formatFileSize(file.size)}
@@ -104,14 +118,32 @@
     </Card.Content>
     <Card.Footer class='flex justify-between w-full border-t border-text-muted-foreground/20  '>
       <div class="flex gap-2">
-          <Button variant='outline' size='sm' onclick={handleEdit}>
-              <Code class="h-4 w-4 mr-2" />
-              Edit
-          </Button>
-          <Button variant='ghost' size='sm' onclick={()=> handleOpenDir(file)}>
-              <FolderOpenDot class="h-4 w-4 " />
-              Open
-          </Button>
+
+            <Tooltip.Root>
+              <Tooltip.Trigger >
+                <Button variant='outline' size='sm' onclick={handleEdit}>
+                    <Code class="h-4 w-4 mr-2" />
+                    Edit
+                </Button>
+              </Tooltip.Trigger>
+              <Tooltip.Content>
+                <p>{file.size > THIRTY_MB_SIZE ? "Edit in default editor" : "Edit file"}</p>
+              </Tooltip.Content>
+            </Tooltip.Root>
+
+
+            <Tooltip.Root>
+              <Tooltip.Trigger>
+                <Button variant='ghost' size='sm' onclick={()=> handleOpenDir(file)}>
+                    <FolderOpenDot class="h-4 w-4 " />
+                    Open
+                </Button>
+              </Tooltip.Trigger>
+              <Tooltip.Content>
+                  <p>Open file in your file manager</p>
+              </Tooltip.Content>
+            </Tooltip.Root>
+
       </div>
       
       <div class="flex"> 

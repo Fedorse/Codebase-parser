@@ -8,6 +8,7 @@
   import {invoke} from '@tauri-apps/api/core';
   import {getCurrentWebview} from '@tauri-apps/api/webview';
 	import { onMount } from 'svelte';
+  import {toast} from 'svelte-sonner'
 
 
   type DragEventPayload = {
@@ -105,10 +106,12 @@ const parseSelectedNodes = async () => {
   isLoading = true
   try {
     await invoke('parse', { paths });
+    toast.success('Parse completed successfully')
     isDialogOpen = false;
     filesTreeNodes = [];
   } catch(err) {
     console.error('Parse failed:', err)
+    toast.error('Parse failed')
   }finally {
     isLoading = false
   }

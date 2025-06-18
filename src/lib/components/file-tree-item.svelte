@@ -29,7 +29,8 @@
     cascadeSelection(checked, node);
   };
   </script>
-  
+
+
 
   {#if node.type === 'File'}
     <li class="flex items-center gap-2 pt-1">
@@ -37,7 +38,7 @@
       <div
       class={{
         'flex items-center gap-2': true,         
-        'text-white ': node.selected,
+        'text-primary ': node.selected,
         'text-accent': !node.selected           
       }}
     >
@@ -58,7 +59,7 @@
         <div
         class={{
           'flex items-center gap-2': true,
-          'text-white ': node.selected,  
+          'text-primary ': node.selected,  
           'text-accent': !node.selected           
         }}
       >
@@ -72,7 +73,7 @@
     </Collapsible.Trigger>
       <Collapsible.Content>
         {#if node.children?.length}
-          <ul class="pl-10 space-y-1">
+          <ul class="border-border border-l pl-6 ml-1 relative space-y-1">
             {#each node.children as child (child.path)}
             <Self node={child} />
             {/each}

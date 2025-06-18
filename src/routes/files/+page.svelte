@@ -3,6 +3,7 @@
     import File from '@lucide/svelte/icons/file-text'
     import EditModal from '$lib/components/edit-modal.svelte';
     import CardFiles from '$lib/components/card-files.svelte';
+    import {toast} from 'svelte-sonner'
 
      type SavedFiles = {
         name: string;
@@ -25,6 +26,7 @@
             fileContent = content
         } catch (err) {
             console.error('Failed to load file content:', err)
+            toast.error('Failed to load file content')
             fileContent = 'Error loading file content'
         }
     }
@@ -36,6 +38,7 @@
             savedFiles = files
         } catch (err) {
             console.error('Failed to load files:', err)
+            toast.error('Failed to load files')
         }
     }
 
@@ -43,8 +46,10 @@
         try {
             await invoke('delete_file', { path: file.path });
             loadFiles()
+            toast.success('File deleted successfully')
         } catch (err) {
             console.error('Failed to delete file:', err);
+            toast.error('Failed to delete file')
         }
     }
 
@@ -52,10 +57,12 @@
     const updateFileContent = async (content: string) => {
         isCodeDialogOpen = false
         try {
-            await invoke('update_file', { filePath: selectedFile?.path, content: content })            
+            await invoke('update_file', { filePath: selectedFile?.path, content: content })
+            toast.success('File updated successfully')
             loadFiles()
         } catch (err) {
             console.error('Failed to update file content:', err);
+            toast.error('Failed to update file content')
         }
     }
     
@@ -66,7 +73,7 @@
 
 </script>
 
-<div class="px-10 w-full">
+<div class="px-10 ">
     <div class="mb-6">
         <h1 class="text-3xl font-bold tracking-tight">Saved Files</h1>
         <p class="text-muted-foreground">Manage your saved files and documents</p>
@@ -79,7 +86,7 @@
     </div>
   {/if}
 
-    <div class='grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-4 gap-4 '>
+    <div class='grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-4 gap-6 '>
         {#each savedFiles as file (file.path)}
         <CardFiles       
         {file}

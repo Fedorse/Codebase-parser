@@ -1,6 +1,6 @@
 <script lang="ts">
     import * as Dialog from "$lib/components/ui/dialog/index.js";
-    import {Code2, Copy} from '@lucide/svelte/icons';
+    import {Code, Copy} from '@lucide/svelte/icons';
     import {Button} from '$lib/components/ui/button/index'
     import Badge from "$lib/components/ui/badge/badge.svelte";
 
@@ -31,7 +31,7 @@ const handleCopy = async (content: string) => {
     <Dialog.Content class="w-[80vw] h-[90vh] flex flex-col">
         <Dialog.Header>
             <Dialog.Title class="flex items-center gap-2">
-                <Code2 class="h-5 w-5" />
+                <Code class="h-4 w-4" />
                 {selectedFile?.name || 'File Content'}
             </Dialog.Title>
         </Dialog.Header>
