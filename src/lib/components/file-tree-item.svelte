@@ -15,8 +15,9 @@
     children?: FileTreeNode[]
   }
   
-    let { node } = $props();
+    let { node, isRoot = false } = $props();
 
+    let isOpen = $state(isRoot && node.type === 'Directory'); 
 
   const cascadeSelection = (isChecked: boolean, node: FileTreeNode) => {
     node.selected = isChecked;
@@ -43,17 +44,21 @@
       }}
     >
         <FileIcon  class="size-5" />
-        <Label >{node.name}</Label>
+        <span >{node.name}</span>
       </div>
     </li>
   {:else}
     <Collapsible.Root
-    class="group/collapsible flex flex-col"
-    open={false}
+    class="flex flex-col"
+    bind:open={isOpen}
     >
-    <Collapsible.Trigger>
+    <Collapsible.Trigger >
       <li class="flex items-center gap-2 flex-row">
-        <ChevronRight class="size-4 transition-transform duration-200 group-data-[state=open]/collapsible:rotate-90" />
+        <ChevronRight 
+        class={{
+          'size-4 transition-transform duration-200' : true 
+          ,'rotate-90': isOpen
+          }} />
         <Checkbox bind:checked={node.selected} onCheckedChange={onToggle} onclick={(e)=>e.stopPropagation()}
         />
         <div
@@ -72,8 +77,8 @@
       </li>
     </Collapsible.Trigger>
       <Collapsible.Content>
-        {#if node.children?.length}
-          <ul class="border-border border-l pl-6 ml-1 relative space-y-1">
+        {#if isOpen && node.children?.length}
+          <ul class="border-border border-l pl-8 ml-1 relative space-y-1">
             {#each node.children as child (child.path)}
             <Self node={child} />
             {/each}

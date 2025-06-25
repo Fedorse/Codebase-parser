@@ -7,8 +7,10 @@
   import FileTreeItem from "$lib/components/file-tree-item.svelte";
   import {invoke} from '@tauri-apps/api/core';
   import {getCurrentWebview} from '@tauri-apps/api/webview';
-	import { onMount } from 'svelte';
+	import { onMount, tick } from 'svelte';
   import {toast} from 'svelte-sonner'
+
+
 
 
   type DragEventPayload = {
@@ -19,7 +21,7 @@
 
   type FileTreeNode = {
   name: string;
-  path:string;
+  path: string;
   type: 'File' | 'Directory',
   selected?: true,
   children?: FileTreeNode[]
@@ -133,6 +135,7 @@ const collectSelectedPath = (nodes: FileTreeNode[]): string[] => {
 const handleOpenFiles = async (selectDir: boolean) => {
   const selected = await open({multiple: true, directory: selectDir})
   if (!selected) return
+  isLoading = true
   try {
     const tree = await invoke<FileTreeNode[]>('get_preview_tree', {
       paths: selected
@@ -142,6 +145,8 @@ const handleOpenFiles = async (selectDir: boolean) => {
     isDialogOpen = true
   } catch(err) {
     console.error('Parse failed:', err)
+  } finally {
+    isLoading = false
   }
 }
 </script>
@@ -158,8 +163,10 @@ const handleOpenFiles = async (selectDir: boolean) => {
           <div 
           class={{
             "border border-border border-dashed flex flex-col items-center justify-center rounded-sm w-2xl h-96": true,
-            "border-highlight border-2 bg-input": isDragging,
-            "bg-muted": !isDragging
+            "border-highlight  bg-input": isDragging,
+            "bg-muted": !isDragging,
+            "animate-pulse border-highlight ": isLoading, 
+
           }}>
             {#if isDragging}
               <div class="text-center">
@@ -172,7 +179,6 @@ const handleOpenFiles = async (selectDir: boolean) => {
                 <div class="text-7xl mb-2">📁</div>
                 <p class="text-xl">Drag and drop files here</p>
                 <p class="text-sm text-card-foreground mt-1">or use the button below</p>
-
               </div>
             {/if}
 
@@ -182,8 +188,14 @@ const handleOpenFiles = async (selectDir: boolean) => {
               'opacity-100': !isDragging
             }}>
               <Button variant="outline" onclick={()=> handleOpenFiles(true)}>
+                {#if isLoading}
+                <div class="flex items-center gap-2">
+                  <span class="text-sm">Uploading files...</span>
+                </div>
+                {:else}
                 <FolderInput class="mr-2 size-5" />
                 Upload Files
+                {/if}
               </Button>
             </div>
 
@@ -200,7 +212,7 @@ const handleOpenFiles = async (selectDir: boolean) => {
         </Dialog.Header>
           <ul class="mt-4 flex-1 pr-2 space-y-1 text-sm w-full overflow-y-auto h-full ">
             {#each filesTreeNodes as node (node.path)}
-              <FileTreeItem {node}/>
+              <FileTreeItem {node} isRoot={true} />
             {/each}
           </ul>
           <Separator orientation='horizontal' />
