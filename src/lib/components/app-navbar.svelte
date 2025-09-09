@@ -8,7 +8,7 @@
   let homePage = $derived(page.route.id === '/');
 </script>
 
-<nav class="flex h-20 w-full items-center justify-between px-4">
+<nav class="flex h-20 w-full items-center justify-between px-6 py-10">
   <!-- left: context action -->
   <div>
     {#if homePage}

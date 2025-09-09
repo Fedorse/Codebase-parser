@@ -18,12 +18,12 @@
     name: string;
     path: string;
     type: 'File' | 'Directory';
-    selected?: true;
+    selected?: boolean;
     children?: FileTreeNode[];
   };
 
   let filesTreeNodes = $state<FileTreeNode[]>([]);
-  let isDialogOpen = $state(true);
+  let isDialogOpen = $state(false);
   let isDragging = $state(false);
   let isLoading = $state(false);
 
@@ -119,9 +119,10 @@
       isLoading = false;
     }
   };
+
 </script>
 
-<main class="gap- flex w-full flex-col items-center justify-center gap-4">
+<main class="gap- flex w-full flex-col items-center gap-4 pt-4 md:pt-8 xl:pt-20 2xl:pt-24">
   <Card.Root class="bg-card/40 h-[45%] w-full max-w-5xl justify-between">
     <Card.Header class="flex justify-between">
       <div class="flex flex-col gap-2">

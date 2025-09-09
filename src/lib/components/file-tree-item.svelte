@@ -1,90 +1,86 @@
 <script lang="ts">
-  import { Checkbox }from '$lib/components/ui/checkbox';
+  import { Checkbox } from '$lib/components/ui/checkbox';
   import { Label } from '$lib/components/ui/label';
-    import FileIcon from '@lucide/svelte/icons/file';
-    import FolderIcon from '@lucide/svelte/icons/folder';
-    import ChevronRight from '@lucide/svelte/icons/chevron-right';
-    import * as Collapsible from '$lib/components/ui/collapsible';
-    import Self from '$lib/components/file-tree-item.svelte';
+  import FileIcon from '@lucide/svelte/icons/file';
+  import FolderIcon from '@lucide/svelte/icons/folder';
+  import ChevronRight from '@lucide/svelte/icons/chevron-right';
+  import * as Collapsible from '$lib/components/ui/collapsible';
+  import Self from '$lib/components/file-tree-item.svelte';
 
-    type FileTreeNode = {
+  type FileTreeNode = {
     name: string;
-    path:string;
-    type: 'File' | 'Directory',
-    selected?: boolean,
-    children?: FileTreeNode[]
-  }
-  
-    let { node, isRoot = false } = $props();
+    path: string;
+    type: 'File' | 'Directory';
+    selected?: boolean;
+    children?: FileTreeNode[];
+  };
 
-    let isOpen = $state(isRoot && node.type === 'Directory'); 
+  let { node, isRoot = false } = $props();
+
+  let isOpen = $state(isRoot && node.type === 'Directory');
 
   const cascadeSelection = (isChecked: boolean, node: FileTreeNode) => {
     node.selected = isChecked;
-    node.children?.forEach(node => cascadeSelection(isChecked, node));
+    node.children?.forEach((node) => cascadeSelection(isChecked, node));
   };
 
   const onToggle = (checked: boolean) => {
     node.selected = checked;
-    if (node.type === 'Directory') 
-    cascadeSelection(checked, node);
+    if (node.type === 'Directory') cascadeSelection(checked, node);
   };
-  </script>
+</script>
 
-
-
-  {#if node.type === 'File'}
-    <li class="flex items-center gap-2 pt-1">
-      <Checkbox  bind:checked={node.selected} onCheckedChange={onToggle}  />
-      <div
+{#if node.type === 'File'}
+  <li class="flex items-center gap-2 pt-1">
+    <Checkbox bind:checked={node.selected} onCheckedChange={onToggle} />
+    <div
       class={{
-        'flex items-center gap-2': true,         
+        'flex items-center gap-2': true,
         'text-primary ': node.selected,
-        'text-accent': !node.selected           
+        'text-primary/20': !node.selected
       }}
     >
-        <FileIcon  class="size-5" />
-        <span >{node.name}</span>
-      </div>
-    </li>
-  {:else}
-    <Collapsible.Root
-    class="flex flex-col"
-    bind:open={isOpen}
-    >
-    <Collapsible.Trigger >
-      <li class="flex items-center gap-2 flex-row">
-        <ChevronRight 
-        class={{
-          'size-4 transition-transform duration-200' : true 
-          ,'rotate-90': isOpen
-          }} />
-        <Checkbox bind:checked={node.selected} onCheckedChange={onToggle} onclick={(e)=>e.stopPropagation()}
+      <FileIcon class="size-5" />
+      <span>{node.name}</span>
+    </div>
+  </li>
+{:else}
+  <Collapsible.Root class="flex flex-col" bind:open={isOpen}>
+    <Collapsible.Trigger>
+      <li class="flex flex-row items-center gap-2">
+        <ChevronRight
+          class={{
+            'size-4 transition-transform duration-200': true,
+            'rotate-90': isOpen
+          }}
+        />
+        <Checkbox
+          bind:checked={node.selected}
+          onCheckedChange={onToggle}
+          onclick={(e) => e.stopPropagation()}
         />
         <div
-        class={{
-          'flex items-center gap-2': true,
-          'text-primary ': node.selected,  
-          'text-accent': !node.selected           
-        }}
-      >
-
+          class={{
+            'flex items-center gap-2': true,
+            'text-primary ': node.selected,
+            'text-primary/20': !node.selected
+          }}
+        >
           <FolderIcon class="size-6" />
-          <Label class="select-none cursor-pointer flex-1">
+          <Label class="flex-1 cursor-pointer select-none">
             {node.name}
           </Label>
         </div>
       </li>
     </Collapsible.Trigger>
-      <Collapsible.Content>
-        {#if isOpen && node.children?.length}
-          <ul class="border-border border-l pl-8 ml-1 relative space-y-1">
-            {#each node.children as child (child.path)}
+    <Collapsible.Content>
+      {#if isOpen && node.children?.length}
+        <ul class="border-border relative ml-1 space-y-1 border-l pl-8">
+          {#each node.children as child (child.path)}
             <Self node={child} />
-            {/each}
-          </ul>
-        {/if}
-      </Collapsible.Content>
-    </Collapsible.Root>
-  {/if}
-  
+          {/each}
+        </ul>
+      {/if}
+    </Collapsible.Content>
+  </Collapsible.Root>
+{/if}
