@@ -12,13 +12,13 @@
   <!-- left: context action -->
   <div>
     {#if homePage}
-      <a
+      <!-- <a
         href="/files"
         class="text-muted-foreground hover:text-foreground inline-flex items-center gap-2 transition"
       >
         <FileIcon class="size-5" />
         <span class="text-sm">Files</span>
-      </a>
+      </a> -->
     {:else}
       <a
         href="/"

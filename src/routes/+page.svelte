@@ -119,11 +119,10 @@
       isLoading = false;
     }
   };
-
 </script>
 
 <main class="gap- flex w-full flex-col items-center gap-4 pt-4 md:pt-8 xl:pt-20 2xl:pt-24">
-  <Card.Root class="bg-card/40 h-[45%] w-full max-w-5xl justify-between">
+  <Card.Root class="bg-card/40 w-full max-w-5xl justify-between md:h-72 xl:h-96">
     <Card.Header class="flex justify-between">
       <div class="flex flex-col gap-2">
         <Card.Title>Quick Start</Card.Title>
@@ -142,7 +141,7 @@
       <div
         class={{
           ' w-full rounded-2xl border border-dashed p-8 text-center transition-all sm:p-10': true,
-          ' border-border border-[1px]': !isDragging && !isLoading,
+          ' border-border border-[1.5px]': !isDragging && !isLoading,
           'bg-input border-highlight ring-primary/40 ring-2': isDragging,
           'border-highlight pointer-events-none animate-pulse select-none': isLoading
         }}
