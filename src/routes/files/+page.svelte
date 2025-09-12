@@ -1,106 +1,95 @@
-<script lang="ts">
-    import {invoke} from '@tauri-apps/api/core';
-    import File from '@lucide/svelte/icons/file-text'
-    import EditModal from '$lib/components/edit-modal.svelte';
-    import CardFiles from '$lib/components/card-files.svelte';
-    import {toast} from 'svelte-sonner'
+<!-- <script lang="ts">
+  import { invoke } from '@tauri-apps/api/core';
+  import File from '@lucide/svelte/icons/file-text';
+  import EditModal from '$lib/components/edit-modal.svelte';
+  import CardFiles from '$lib/components/card-files.svelte';
+  import { toast } from 'svelte-sonner';
+  type SavedFiles = {
+    name: string;
+    path: string;
+    preview: string;
+    size: number;
+  };
 
-     type SavedFiles = {
-        name: string;
-        path: string;
-        preview: string;
-        size: number;
-    };
+  let savedFiles = $state<SavedFiles[]>([]);
+  let isCodeDialogOpen = $state(false);
+  let fileContent = $state<string>('');
+  let selectedFile = $state<SavedFiles | null>(null);
 
-    let savedFiles = $state<SavedFiles[]>([])
-    let isCodeDialogOpen = $state(false);
-    let fileContent = $state<string>('');
-    let selectedFile = $state<SavedFiles | null>(null);
-
-
-    const openDialogCode = async (file: SavedFiles)=>{
-        selectedFile = file
-        isCodeDialogOpen = true
-        try {
-            const content = await invoke<string>('get_file_content', { filePath: file.path })
-            fileContent = content
-        } catch (err) {
-            console.error('Failed to load file content:', err)
-            toast.error('Failed to load file content')
-            fileContent = 'Error loading file content'
-        }
+  const openDialogCode = async (file: SavedFiles) => {
+    selectedFile = file;
+    isCodeDialogOpen = true;
+    try {
+      const content = await invoke<string>('get_file_content', { filePath: file.path });
+      fileContent = content;
+    } catch (err) {
+      console.error('Failed to load file content:', err);
+      toast.error('Failed to load file content');
+      fileContent = 'Error loading file content';
     }
+  };
 
-
-    const loadFiles = async () => {
-        try {
-            const files = await invoke<SavedFiles[]>('get_files')
-            savedFiles = files
-        } catch (err) {
-            console.error('Failed to load files:', err)
-            toast.error('Failed to load files')
-        }
+  const loadFiles = async () => {
+    try {
+      const files = await invoke<SavedFiles[]>('get_files');
+      savedFiles = files;
+    } catch (err) {
+      console.error('Failed to load files:', err);
+      toast.error('Failed to load files');
     }
+  };
 
-    const handleDelete = async (file: SavedFiles) => {
-        try {
-            await invoke('delete_file', { path: file.path });
-            loadFiles()
-            toast.success('File deleted successfully')
-        } catch (err) {
-            console.error('Failed to delete file:', err);
-            toast.error('Failed to delete file')
-        }
+  const handleDelete = async (file: SavedFiles) => {
+    try {
+      await invoke('delete_file', { path: file.path });
+      loadFiles();
+      toast.success('File deleted successfully');
+    } catch (err) {
+      console.error('Failed to delete file:', err);
+      toast.error('Failed to delete file');
     }
+  };
 
-
-    const updateFileContent = async (content: string) => {
-        isCodeDialogOpen = false
-        try {
-            await invoke('update_file', { filePath: selectedFile?.path, content: content })
-            toast.success('File updated successfully')
-            loadFiles()
-        } catch (err) {
-            console.error('Failed to update file content:', err);
-            toast.error('Failed to update file content')
-        }
+  const updateFileContent = async (content: string) => {
+    isCodeDialogOpen = false;
+    try {
+      await invoke('update_file', { filePath: selectedFile?.path, content: content });
+      toast.success('File updated successfully');
+      loadFiles();
+    } catch (err) {
+      console.error('Failed to update file content:', err);
+      toast.error('Failed to update file content');
     }
-    
+  };
 
-    $effect(() => {
-        loadFiles()
-    })
-
+  $effect(() => {
+    loadFiles();
+  });
 </script>
 
-<div class="px-10 ">
-    <div class="mb-6">
-        <h1 class="text-3xl font-bold tracking-tight">Saved Files</h1>
-        <p class="text-muted-foreground">Manage your saved files and documents</p>
-    </div>          
-    {#if savedFiles.length === 0} 
-    <div class="h-full flex flex-col items-center justify-center">
-        <File class=' mb-4 text-muted-foreground size-12'/>
-        <h3 class="text-lg font-medium mb-2">No files found</h3>
-        <p class="text-muted-foreground">You saved files will appear when you parse them</p>
+<div class="px-10">
+  <div class="mb-6">
+    <h1 class="text-3xl font-bold tracking-tight">Saved Files</h1>
+    <p class="text-muted-foreground">Manage your saved files and documents</p>
+  </div>
+  {#if savedFiles.length === 0}
+    <div class="flex h-full flex-col items-center justify-center">
+      <File class=" text-muted-foreground mb-4 size-12" />
+      <h3 class="mb-2 text-lg font-medium">No files found</h3>
+      <p class="text-muted-foreground">You saved files will appear when you parse them</p>
     </div>
   {/if}
 
-    <div class='grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-4 gap-6 '>
-        {#each savedFiles as file (file.path)}
-        <CardFiles       
-        {file}
-        {handleDelete} 
-        {openDialogCode} 
-        />
-      {/each}
-      </div>
-        <EditModal 
-            {fileContent} 
-            {selectedFile} 
-            {updateFileContent}
-            bind:isCodeDialogOpen
-          />
-</div>
+  <div class="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-4">
+    {#each savedFiles as file (file.path)}
+      <CardFiles {file} {handleDelete} {openDialogCode} />
+    {/each}
+  </div>
+  <EditModal {fileContent} {selectedFile} {updateFileContent} bind:isCodeDialogOpen />
+</div> -->
 
+<script lang="ts">
+  import ProjectRoadmapCard from '$lib/components/project-roadmap-card.svelte';
+</script>
 
+<ProjectRoadmapCard root="/Users/you/dev/parser-ai-front" />

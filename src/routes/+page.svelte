@@ -8,6 +8,9 @@
   import FileDialogTree from '$lib/components/file-dialog-tree.svelte';
   import RecentFiles from '$lib/components/collaps-files.svelte';
   import * as Card from '$lib/components/ui/card';
+  import { Progress } from '$lib/components/ui/progress/index.js';
+
+  import { tick } from 'svelte';
 
   type DragEventPayload = {
     type: 'over' | 'drop' | 'leave' | 'enter';
@@ -157,7 +160,7 @@
           ' w-full rounded-2xl border border-dashed p-8 text-center transition-all sm:p-10': true,
           ' border-border border-[1.5px]': !isDragging && !isLoading,
           'bg-input border-highlight ring-primary/40 ring-2': isDragging,
-          'border-highlight pointer-events-none animate-pulse select-none': isLoading
+          'border-highlight animate-pulse select-none': isLoading
         }}
       >
         <div class="">
@@ -165,6 +168,11 @@
             <div class="flex flex-col items-center gap-2">
               <div class="mb-1 text-7xl leading-none">📂</div>
               <p>Drop files here to parse</p>
+            </div>
+          {:else if isLoading}
+            <div class="flex h-20 flex-col items-center justify-center gap-2">
+              <p>Parsing...</p>
+              <Progress value={50} />
             </div>
           {:else}
             <div class="flex flex-col items-center gap-2">
