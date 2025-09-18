@@ -1,4 +1,4 @@
-<!-- <script lang="ts">
+<script lang="ts">
   import { invoke } from '@tauri-apps/api/core';
   import File from '@lucide/svelte/icons/file-text';
   import EditModal from '$lib/components/edit-modal.svelte';
@@ -86,10 +86,4 @@
     {/each}
   </div>
   <EditModal {fileContent} {selectedFile} {updateFileContent} bind:isCodeDialogOpen />
-</div> -->
-
-<script lang="ts">
-  import ProjectRoadmapCard from '$lib/components/project-roadmap-card.svelte';
-</script>
-
-<ProjectRoadmapCard root="/Users/you/dev/parser-ai-front" />
+</div>

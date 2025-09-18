@@ -5,5 +5,8 @@
 	],
 	"/files": [
 		"src/routes/+layout.ts"
+	],
+	"/map": [
+		"src/routes/+layout.ts"
 	]
 }

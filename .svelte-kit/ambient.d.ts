@@ -36,6 +36,7 @@ declare module '$env/static/private' {
 	export const TMPDIR: string;
 	export const HOMEBREW_REPOSITORY: string;
 	export const npm_config_global_prefix: string;
+	export const VSCODE_PYTHON_AUTOACTIVATE_GUARD: string;
 	export const TERM_PROGRAM_VERSION: string;
 	export const ZDOTDIR: string;
 	export const TAURI_CLI_VERBOSITY: string;
@@ -61,6 +62,7 @@ declare module '$env/static/private' {
 	export const npm_config_frozen_lockfile: string;
 	export const PATH: string;
 	export const npm_package_json: string;
+	export const LaunchInstanceID: string;
 	export const __CFBundleIdentifier: string;
 	export const USER_ZDOTDIR: string;
 	export const TAURI_ENV_PLATFORM_VERSION: string;
@@ -98,6 +100,8 @@ declare module '$env/static/private' {
 	export const INFOPATH: string;
 	export const HOMEBREW_CELLAR: string;
 	export const GIT_ASKPASS: string;
+	export const OSLogRateLimit: string;
+	export const SECURITYSESSIONID: string;
 	export const npm_node_execpath: string;
 	export const COLORTERM: string;
 	export const npm_config_prefix: string;
@@ -143,6 +147,7 @@ declare module '$env/dynamic/private' {
 		TMPDIR: string;
 		HOMEBREW_REPOSITORY: string;
 		npm_config_global_prefix: string;
+		VSCODE_PYTHON_AUTOACTIVATE_GUARD: string;
 		TERM_PROGRAM_VERSION: string;
 		ZDOTDIR: string;
 		TAURI_CLI_VERBOSITY: string;
@@ -168,6 +173,7 @@ declare module '$env/dynamic/private' {
 		npm_config_frozen_lockfile: string;
 		PATH: string;
 		npm_package_json: string;
+		LaunchInstanceID: string;
 		__CFBundleIdentifier: string;
 		USER_ZDOTDIR: string;
 		TAURI_ENV_PLATFORM_VERSION: string;
@@ -205,6 +211,8 @@ declare module '$env/dynamic/private' {
 		INFOPATH: string;
 		HOMEBREW_CELLAR: string;
 		GIT_ASKPASS: string;
+		OSLogRateLimit: string;
+		SECURITYSESSIONID: string;
 		npm_node_execpath: string;
 		COLORTERM: string;
 		npm_config_prefix: string;

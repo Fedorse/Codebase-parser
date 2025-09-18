@@ -4,6 +4,7 @@
   import ArrowLeft from '@lucide/svelte/icons/arrow-left';
   import Grip from '@lucide/svelte/icons/grip-vertical';
   import ToggleThemeButton from '$lib/components/theme-switch-button.svelte';
+  import Button from './ui/button/button.svelte';
 
   let homePage = $derived(page.route.id === '/');
 </script>
@@ -41,5 +42,6 @@
   <!-- right: actions -->
   <div class="flex items-center gap-2">
     <ToggleThemeButton />
+    <Button variant="default" size="sm" href="/map">map</Button>
   </div>
 </nav>
