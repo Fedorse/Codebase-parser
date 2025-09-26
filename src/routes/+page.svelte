@@ -1,25 +1,14 @@
 <script lang="ts" context="module">
-  export type FileTreeNode = {
-    name: string;
-    path: string;
-    type: 'File' | 'Directory';
-    selected?: boolean;
-    children?: FileTreeNode[];
-  };
-
   export type DragEventPayload = {
     type: 'over' | 'drop' | 'leave' | 'enter';
     position: { x: number; y: number };
     paths: string[];
   };
-
-  export type SavedFiles = { name: string; path: string; preview: string; size: number };
 </script>
 
 <script lang="ts">
   import { open } from '@tauri-apps/plugin-dialog';
   import { Button } from '$lib/components/ui/button/index';
-  import { invoke } from '@tauri-apps/api/core';
   import { getCurrentWebview } from '@tauri-apps/api/webview';
   import { onMount } from 'svelte';
   import { toast } from 'svelte-sonner';
@@ -28,6 +17,8 @@
   import * as Card from '$lib/components/ui/card';
   import { Progress } from '$lib/components/ui/progress/index.js';
   import { invalidateAll } from '$app/navigation';
+  import { collectSelectedPath, parsePaths, getPreviewTreeUI } from '$lib/tauri';
+  import type { FileTreeNode } from '$lib/tauri';
 
   let { data } = $props();
 
@@ -67,22 +58,9 @@
   });
 
   const handleDroppedFiles = async (paths: string[]) => {
-    try {
-      if (paths.length === 0) return;
-      const tree = await invoke<FileTreeNode[]>('get_preview_tree', { paths });
-      selectAllNodes(tree);
-      filesTreeNodes = tree;
-      isDialogOpen = true;
-    } catch (err) {
-      console.error('Failed to prosses dropped files:', err);
-    }
-  };
-
-  const selectAllNodes = (nodes: FileTreeNode[]) => {
-    for (const node of nodes) {
-      node.selected = true;
-      if (node.type === 'Directory' && node.children) selectAllNodes(node.children);
-    }
+    if (paths.length === 0) return;
+    filesTreeNodes = await getPreviewTreeUI(paths);
+    isDialogOpen = true;
   };
 
   const parseSelectedNodes = async () => {
@@ -90,38 +68,23 @@
     if (paths.length === 0) return;
     isLoading = true;
     try {
-      await invoke('parse', { paths });
-      toast.success('Parse completed successfully');
+      await parsePaths(paths);
       filesTreeNodes = [];
       invalidateAll();
+      toast.success('Parse completed successfully');
     } catch (err) {
-      console.error('Parse failed:', err);
       toast.error('Parse failed');
     } finally {
       isLoading = false;
     }
   };
 
-  const collectSelectedPath = (nodes: FileTreeNode[]): string[] => {
-    const paths: string[] = [];
-    for (const node of nodes) {
-      if (node.type === 'File') {
-        if (node.selected) paths.push(node.path);
-      } else if (node.children) {
-        paths.push(...collectSelectedPath(node.children));
-      }
-    }
-    return paths;
-  };
-
-  const handleOpenFiles = async (selectDir: boolean) => {
-    const selected = await open({ multiple: true, directory: selectDir });
+  const handleOpenFiles = async () => {
+    const selected = await open({ multiple: true, directory: true });
     if (!selected) return;
     isLoading = true;
     try {
-      const tree = await invoke<FileTreeNode[]>('get_preview_tree', { paths: selected });
-      selectAllNodes(tree);
-      filesTreeNodes = tree;
+      filesTreeNodes = await getPreviewTreeUI(selected);
       isDialogOpen = true;
     } catch (err) {
       console.error('Parse failed:', err);
@@ -142,7 +105,7 @@
       </div>
 
       <div class="flex flex-wrap gap-2">
-        <Button variant="default" onclick={() => handleOpenFiles(true)} disabled={isLoading}>
+        <Button variant="default" onclick={() => handleOpenFiles()} disabled={isLoading}>
           {isLoading ? '…' : 'Upload files'}
         </Button>
       </div>

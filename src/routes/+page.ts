@@ -1,11 +1,10 @@
-import { invoke } from '@tauri-apps/api/core';
+import { getSavedFiles } from '@/lib/tauri';
 
 export const load = async () => {
   try {
-    const recentFiles = await invoke('get_files');
+    const recentFiles = await getSavedFiles();
     return { recentFiles };
   } catch (error) {
     console.error('Failed to load recent files:', error);
-    return { recentFiles: [] };
   }
 };
