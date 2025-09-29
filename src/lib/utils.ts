@@ -12,6 +12,7 @@ export type WithoutChildren<T> = T extends { children?: any } ? Omit<T, 'childre
 export type WithoutChildrenOrChild<T> = WithoutChildren<WithoutChild<T>>;
 export type WithElementRef<T, U extends HTMLElement = HTMLElement> = T & { ref?: U | null };
 import type { Edge, Node } from '@xyflow/svelte';
+import type { FileTreeNode } from './tauri';
 export type GraphData = { label: string };
 
 export type FileNode = {
@@ -26,6 +27,17 @@ export const formatFileSize = (bytes: number): string => {
   if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
   if (bytes < 1024 * 1024 * 1024) return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
   return `${(bytes / (1024 * 1024 * 1024)).toFixed(1)} GB`;
+};
+
+export const setSelected = (node: FileTreeNode, value: boolean) => {
+  node.selected = value;
+  if (node.type === 'Directory' && node.children) {
+    node.children.forEach((child) => setSelected(child, value));
+  }
+};
+
+export const setSelectedAll = (nodes: FileTreeNode[], value: boolean) => {
+  nodes.forEach((n) => setSelected(n, value));
 };
 
 export const toInitialGraph = (roots: FileNode[]) => {

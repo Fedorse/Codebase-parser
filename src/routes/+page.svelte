@@ -112,7 +112,7 @@
       </div>
 
       <div class="flex flex-wrap gap-2">
-        <Button variant="default" onclick={() => handleOpenFiles()} disabled={isLoading}>
+        <Button variant="default" onclick={handleOpenFiles} disabled={isLoading}>
           {isLoading ? '…' : 'Upload files'}
         </Button>
       </div>

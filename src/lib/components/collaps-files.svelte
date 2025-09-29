@@ -4,22 +4,23 @@
   import { ChevronRight } from '@lucide/svelte';
   import FileText from '@lucide/svelte/icons/file-text';
   import Button from '$lib/components/ui/button/button.svelte';
-
-  type SavedFiles = { name: string; path: string; preview: string; size: number };
+  import type { SavedFiles } from '$lib/tauri';
 
   let { limit = 3, files = [] as SavedFiles[] } = $props<any>();
-  let isOpen = $state(true);
+  let open = $state(true);
   let loading = $state(false);
 
   const recent = $derived(files.slice(0, limit));
+
+  const toggle = () => (open = !open);
 </script>
 
-<Collapsible.Root bind:open={isOpen} class="w-full ">
+<Collapsible.Root bind:open class="w-full ">
   <div class="flex items-center justify-between">
-    <button class="flex items-center gap-2" type="button" onclick={() => (isOpen = !isOpen)}>
+    <button class="flex items-center gap-2" type="button" onclick={toggle}>
       <ChevronRight
         class="text-muted-foreground size-5 shrink-0 transition-transform data-[state=open]:rotate-90"
-        data-state={isOpen ? 'open' : 'closed'}
+        data-state={open ? 'open' : 'closed'}
       />
       <div class="text-sm font-medium">Recent files</div>
     </button>

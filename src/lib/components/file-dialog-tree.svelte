@@ -4,26 +4,21 @@
   import * as Dialog from '$lib/components/ui/dialog';
   import FileTreeItem from '$lib/components/file-tree-item.svelte';
   import type { FileTreeNode } from '$lib/tauri.ts';
+  import { setSelectedAll } from '$lib/utils';
 
   type Props = { filesTreeNodes: FileTreeNode[]; open: boolean; onParse: () => void };
+
   let { filesTreeNodes, open = $bindable(false), onParse }: Props = $props();
 
   let allSelected = $state(true);
 
-  const setAll = (nodes: FileTreeNode[], v: boolean) => {
-    for (const n of nodes) {
-      n.selected = v;
-      if (n.type === 'Directory' && n.children) setAll(n.children, v);
-    }
-  };
-
   const toggleAll = () => {
     allSelected = !allSelected;
-    setAll(filesTreeNodes, allSelected);
+    setSelectedAll(filesTreeNodes, allSelected);
   };
 </script>
 
-<Dialog.Root {open} onOpenChange={() => (open = false)}>
+<Dialog.Root bind:open>
   <Dialog.Content class="flex h-[70%] w-[60vw] flex-col">
     <Dialog.Header class="flex items-start justify-between gap-2">
       <div>
@@ -41,10 +36,10 @@
     <Separator orientation="horizontal" />
 
     <div class="flex gap-4">
-      <Button variant="outline" onclick={toggleAll}>
+      <Button onclick={onParse}>Parse</Button>
+      <Button variant="secondary" class="self-end" onclick={toggleAll}>
         {allSelected ? 'Deselect All' : 'Select All'}
       </Button>
-      <Button onclick={onParse}>Parse</Button>
     </div>
   </Dialog.Content>
 </Dialog.Root>

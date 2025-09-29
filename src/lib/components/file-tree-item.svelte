@@ -6,28 +6,29 @@
   import ChevronRight from '@lucide/svelte/icons/chevron-right';
   import * as Collapsible from '$lib/components/ui/collapsible';
   import Self from '$lib/components/file-tree-item.svelte';
-
-  type FileTreeNode = {
-    name: string;
-    path: string;
-    type: 'File' | 'Directory';
-    selected?: boolean;
-    children?: FileTreeNode[];
-  };
+  import { setSelected } from '$lib/utils';
 
   let { node, isRoot = false } = $props();
 
   let isOpen = $state(isRoot && node.type === 'Directory');
 
-  const cascadeSelection = (isChecked: boolean, node: FileTreeNode) => {
-    node.selected = isChecked;
-    node.children?.forEach((node) => cascadeSelection(isChecked, node));
+  const onToggle = (checked: boolean) => {
+    setSelected(node, checked);
   };
 
-  const onToggle = (checked: boolean) => {
-    node.selected = checked;
-    if (node.type === 'Directory') cascadeSelection(checked, node);
-  };
+  let checkboxState = $derived.by(() => {
+    if (node.type !== 'Directory' || !node.children?.length) {
+      return { isChecked: node.selected, isIndeterminate: false };
+    }
+
+    const allChildrenChecked = node.children.every((child) => child.selected);
+    const noChildrenChecked = node.children.every((child) => !child.selected);
+
+    return {
+      isChecked: allChildrenChecked,
+      isIndeterminate: !allChildrenChecked && !noChildrenChecked
+    };
+  });
 </script>
 
 {#if node.type === 'File'}
@@ -55,8 +56,9 @@
           }}
         />
         <Checkbox
-          bind:checked={node.selected}
+          checked={checkboxState.isChecked}
           onCheckedChange={onToggle}
+          indeterminate={checkboxState.isIndeterminate}
           onclick={(e) => e.stopPropagation()}
         />
         <div
