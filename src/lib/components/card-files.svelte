@@ -4,11 +4,11 @@
   import * as Card from '$lib/components/ui/card/index.js';
   import Input from './ui/input/input.svelte';
   import Badge from './ui/badge/badge.svelte';
-  import * as AlertDialog from '$lib/components/ui/alert-dialog/index.js';
   import * as Tooltip from '$lib/components/ui/tooltip/index.js';
   import { Button } from '$lib/components/ui/button/index';
   import { formatFileSize } from '$lib/utils';
   import { openDefaultEditor, openFileInfolder, renameFile } from '$lib/tauri';
+  import ConfirmDialog from '$lib/components/confirm-dialog.svelte';
 
   import type { FileNode } from '$lib/utils';
 
@@ -30,7 +30,7 @@
 
   let draftName = $state<string>('');
   let renamingPath = $state<string | null>(null);
-  let isDeleteDialogOpen = $state(false);
+  let open = $state(false);
 
   const isLargeFile = $derived(file.size > THIRTY_MB_SIZE);
 
@@ -176,28 +176,17 @@
     </div>
 
     <div class="flex">
-      <Button
-        variant="destructive"
-        size="sm"
-        onclick={() => (isDeleteDialogOpen = !isDeleteDialogOpen)}
-      >
+      <Button variant="destructive" size="sm" onclick={() => (open = !open)}>
         <Trash2 class="h-4 w-4" />
       </Button>
     </div>
   </Card.Footer>
 </Card.Root>
 
-<AlertDialog.Root bind:open={isDeleteDialogOpen}>
-  <AlertDialog.Content>
-    <AlertDialog.Header>
-      <AlertDialog.Title>Delete file?</AlertDialog.Title>
-      <AlertDialog.Description>
-        Are you sure you want to delete <strong>{file.name}</strong>? This action cannot be undone.
-      </AlertDialog.Description>
-    </AlertDialog.Header>
-    <AlertDialog.Footer>
-      <AlertDialog.Cancel>Cancel</AlertDialog.Cancel>
-      <Button variant="destructive" onclick={() => handleDelete(file)}>Delete</Button>
-    </AlertDialog.Footer>
-  </AlertDialog.Content>
-</AlertDialog.Root>
+<ConfirmDialog
+  confirmDialogOpen={open}
+  dialogTitle="Delete file?"
+  dialogDescription={`Are you sure you want to delete file ${file.name}? This action cannot be undone.`}
+  handleCancel={() => (open = false)}
+  handleConfirm={() => handleDelete(file)}
+/>

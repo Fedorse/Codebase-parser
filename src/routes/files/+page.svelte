@@ -16,9 +16,10 @@
 
   const openDialogEditor = async (file: SavedFiles) => {
     selectedFile = file;
-    isCodeDialogOpen = true;
+
     try {
       fileContent = await getFileContent(file);
+      isCodeDialogOpen = true;
     } catch (err) {
       console.error(err);
       toast.error('Failed to load file content');
@@ -38,7 +39,6 @@
   };
 
   const updateFileContent = async (content: string) => {
-    isCodeDialogOpen = false;
     try {
       await updateFile(content, selectedFile);
       toast.success('File updated successfully');
@@ -68,5 +68,7 @@
       <CardFiles {file} {handleDelete} {openDialogEditor} previews={data.previews} />
     {/each}
   </div>
-  <EditModal {fileContent} {selectedFile} {updateFileContent} bind:isCodeDialogOpen />
 </div>
+{#if isCodeDialogOpen}
+  <EditModal {fileContent} {selectedFile} {updateFileContent} bind:isCodeDialogOpen />
+{/if}
