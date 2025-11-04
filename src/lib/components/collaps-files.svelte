@@ -4,12 +4,24 @@
   import { ChevronRight } from '@lucide/svelte';
   import FileText from '@lucide/svelte/icons/file-text';
   import Button from '$lib/components/ui/button/button.svelte';
+  import type { SavedFiles } from '$lib/tauri';
 
   import type { File } from '$lib/type';
 
   type Props = {
     limit?: number;
-    files: File[];
+    files: ParsedFileListItem[];
+  };
+
+  type ParsedFileListItem = {
+    id: string;
+    name: string;
+    directory_path: string;
+    file_size: number;
+    files_count: number;
+    total_size: number;
+    created_at: string;
+    last_modified: string;
   };
 
   let { limit = 3, files = [] }: Props = $props();
@@ -37,7 +49,6 @@
   <Collapsible.Content>
     <div class="pt-3">
       {#if loading}
-        <!-- svelte-ignore element_invalid_self_closing_tag -->
         <div class="bg-muted/40 h-16 w-full animate-pulse rounded-md" />
       {:else if recent.length}
         <ul class="divide-border border-border/70 divide-y rounded-md border">
@@ -47,9 +58,9 @@
                 <FileText class="text-muted-foreground size-4" />
                 <div class="min-w-0 flex-1">
                   <div class="truncate text-sm font-medium">{f.name}</div>
-                  <div class="text-muted-foreground truncate text-xs">{f.path}</div>
+                  <div class="text-muted-foreground truncate text-xs">{f.directory_path}</div>
                 </div>
-                <div class="text-muted-foreground text-xs">{formatFileSize(f.size)}</div>
+                <div class="text-muted-foreground text-xs">{formatFileSize(f.total_size)}</div>
               </a>
             </li>
           {/each}

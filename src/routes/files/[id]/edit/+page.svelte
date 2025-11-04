@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { goto, invalidateAll } from '$app/navigation';
+  import { goto, invalidate } from '$app/navigation';
   import { toast } from 'svelte-sonner';
   import { onMount } from 'svelte';
   import {
@@ -35,7 +35,7 @@
   let confirmOpen = $state(false);
 
   const isTainted = $derived(value !== snapshot);
-  const isLargeFile = $derived(data.file.size > THIRTY_MB_SIZE);
+  const isLargeFile = $derived(data.file.file_size > THIRTY_MB_SIZE);
 
   const closeModal = async () => {
     confirmOpen = false;
@@ -84,16 +84,10 @@
 
   const handleRename = async () => {
     if (rename === data.file.name) return;
-
     try {
       await renameFile(data.file, rename.trim());
-      const newPath = data.file.path.replace(data.file.name, rename.trim());
+      await invalidate('app:files');
 
-      await goto(`/files/${encodeURIComponent(newPath)}/edit`, {
-        replaceState: true
-      });
-
-      await invalidateAll();
       toast.success('Renamed file');
     } catch (e) {
       console.error(e);
@@ -102,9 +96,9 @@
     }
   };
 
-  const openEditor = async (path: string) => {
+  const openEditor = async (file) => {
     try {
-      await openDefaultEditor(path);
+      await openDefaultEditor(file);
     } catch (err) {
       console.error('Failed to open file in editor:', err);
     }
@@ -172,9 +166,9 @@
           <Badge
             variant="secondary"
             class="max-w-lg truncate font-mono text-xs"
-            title={data.file.path}
+            title={data.file.directory_path}
           >
-            {data.file.path}
+            {data.file.directory_path}
           </Badge>
           {#if isLargeFile}
             <Badge variant="secondary" class="text-warn">Large file</Badge>
@@ -212,7 +206,7 @@
                 </div>
 
                 <div class="flex gap-4">
-                  <Button onclick={() => openEditor(data.file.path)}>Open in default Editor</Button>
+                  <Button onclick={() => openEditor(data.file)}>Open in default Editor</Button>
                   <Button variant="outline" onclick={() => handleOpenDir(data.file)}>
                     <FolderOpen class="size-4" />
                     Show in folder

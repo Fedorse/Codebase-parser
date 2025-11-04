@@ -1,12 +1,13 @@
 <script lang="ts">
-  import Self from '$lib/components/file-tree-item.svelte';
-  import { setSelected } from '$lib/utils';
   import { Checkbox } from '$lib/components/ui/checkbox';
   import { Label } from '$lib/components/ui/label';
   import * as Collapsible from '$lib/components/ui/collapsible';
-  import { FileIcon, FolderIcon, ChevronRight } from '@lucide/svelte/icons';
+  import Self from '$lib/components/file-tree-item.svelte';
+  import { setSelected } from '$lib/utils';
+  import type { FileTreeNode } from '$lib/tauri.ts';
 
-  import type { FileTree } from '$lib/type';
+  import { FileIcon, FolderIcon, ChevronRight } from '@lucide/svelte/icons';
+  import { formatFileSize } from '$lib/utils';
 
   let { node, isRoot = false } = $props();
 
@@ -21,8 +22,8 @@
       return { isChecked: node.selected, isIndeterminate: false };
     }
 
-    const allChildrenChecked = node.children.every((child: FileTree) => child.selected);
-    const noChildrenChecked = node.children.every((child: FileTree) => !child.selected);
+    const allChildrenChecked = node.children.every((child: FileTreeNode) => child.selected);
+    const noChildrenChecked = node.children.every((child: FileTreeNode) => !child.selected);
 
     return {
       isChecked: allChildrenChecked,
@@ -43,6 +44,7 @@
     >
       <FileIcon class="size-5" />
       <span>{node.name}</span>
+      <span>{formatFileSize(node.size)}</span>
     </div>
   </li>
 {:else}
@@ -72,6 +74,9 @@
           <Label class="flex-1 cursor-pointer select-none">
             {node.name}
           </Label>
+          <span class="ml-2 text-xs opacity-70">
+            ({node.filesCount ?? 0} files • {formatFileSize(node.totalSize ?? 0)})
+          </span>
         </div>
       </li>
     </Collapsible.Trigger>
