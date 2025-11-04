@@ -4,12 +4,14 @@ use chrono::{DateTime, Local};
 use content_inspector::{inspect, ContentType};
 use dirs;
 use serde::{Deserialize, Serialize};
+use serde_json::json;
 use std::{
     fs::{self, File},
     io::{self, Read, Write},
     path::{Path, PathBuf},
     process::Command,
 };
+use tauri::{AppHandle, Emitter};
 
 // ============================================================================
 // CONSTANTS
@@ -63,6 +65,7 @@ pub enum ParsedPath {
     Directory {
         name: String,
         path: String,
+        size: u64,
         children: Vec<ParsedPath>,
     },
 }
@@ -70,6 +73,184 @@ pub enum ParsedPath {
 // ============================================================================
 // HELPER FUNCTIONS
 // ============================================================================
+///// QUEUE
+///
+/// use tauri::AppHandle;
+
+/// Parse files with event-based progress updates
+
+/// Parse files with event-based progress updates
+pub async fn parse_files_async(
+    paths: Vec<String>,
+    app: AppHandle,
+) -> Result<ParseMetadata> {
+    let (parse_dir, mut output_file, parse_id) = create_parse_directory()?;
+
+    // Count total files first
+    let total_files = count_text_files(&paths)?;
+
+    // Emit initial progress with parse_id
+    let _ = app.emit("parse-progress", json!({
+        "parse_id": parse_id,  // ✅ Add this
+        "parse_progress": 0.0,
+        "files_amount": total_files,
+        "result_file_path": serde_json::Value::Null,
+    }));
+
+    let mut parsed_files = Vec::new();
+    let mut total_size = 0u64;
+    let mut file_tree = Vec::new();
+
+    // Build file tree
+    for path_str in &paths {
+        let path = Path::new(path_str);
+        if path.exists() {
+            file_tree.push(build_file_tree(&path)?);
+        }
+    }
+
+    let mut current_count = 0;
+
+    // Parse each file
+    for path_str in paths {
+        let path = Path::new(&path_str);
+
+        if path.is_dir() {
+            process_directory_with_progress(
+                &path,
+                &mut output_file,
+                &mut parsed_files,
+                &mut total_size,
+                &mut current_count,
+                total_files,
+                &app,
+                &parse_id,  // ✅ Pass parse_id
+            )?;
+        } else if is_text_file(&path)? {
+            write_file_content(&path, &mut output_file)?;
+
+            let metadata = get_file_metadata(&path)?;
+            total_size += metadata.size;
+            parsed_files.push(metadata);
+
+            current_count += 1;
+
+            // Emit progress update with parse_id
+            let progress = (current_count as f32 / total_files as f32) * 100.0;
+            let _ = app.emit("parse-progress", json!({
+                "parse_id": parse_id,  // ✅ Add this
+                "parse_progress": progress,
+                "files_amount": total_files,
+                "result_file_path": serde_json::Value::Null,
+            }));
+        }
+    }
+
+    // Create metadata
+    let metadata = ParseMetadata {
+        id: parse_id.clone(),
+        name: parse_id.clone(),
+        created_at: Local::now(),
+        files_count: parsed_files.len(),
+        total_size,
+        files: parsed_files,
+        file_tree,
+    };
+
+    // Save metadata
+    let metadata_path = parse_dir.join(METADATA_FILENAME);
+    save_metadata(&metadata_path, &metadata)?;
+
+    // Emit completion with file path and parse_id
+    let content_path = get_content_path(&parse_dir);
+    let _ = app.emit("parse-progress", json!({
+        "parse_id": parse_id,  // ✅ Add this
+        "parse_progress": 100.0,
+        "files_amount": total_files,
+        "result_file_path": content_path.to_string_lossy().to_string(),
+    }));
+
+    Ok(metadata)
+}
+
+/// Process directory with progress events
+fn process_directory_with_progress(
+    dir: &Path,
+    output_file: &mut File,
+    parsed_files: &mut Vec<FileMetadata>,
+    total_size: &mut u64,
+    current_count: &mut usize,
+    total_files: usize,
+    app: &AppHandle,
+    parse_id: &str,  // ✅ Add this parameter
+) -> Result<()> {
+    if let Ok(entries) = fs::read_dir(dir) {
+        for entry in entries.flatten() {
+            let path = entry.path();
+
+            if path.is_dir() {
+                process_directory_with_progress(
+                    &path,
+                    output_file,
+                    parsed_files,
+                    total_size,
+                    current_count,
+                    total_files,
+                    app,
+                    parse_id,  // ✅ Pass it along
+                )?;
+            } else if is_text_file(&path)? {
+                write_file_content(&path, output_file)?;
+
+                let metadata = get_file_metadata(&path)?;
+                *total_size += metadata.size;
+                parsed_files.push(metadata);
+
+                *current_count += 1;
+
+                // Emit progress update with parse_id
+                let progress = (*current_count as f32 / total_files as f32) * 100.0;
+                let _ = app.emit("parse-progress", json!({
+                    "parse_id": parse_id,  // ✅ Add this
+                    "parse_progress": progress,
+                    "files_amount": total_files,
+                    "result_file_path": serde_json::Value::Null,
+                }));
+            }
+        }
+    }
+    Ok(())
+}
+
+// Keep the count helper functions...
+fn count_text_files(paths: &[String]) -> Result<usize> {
+    let mut count = 0;
+    for path_str in paths {
+        let path = Path::new(path_str);
+        if path.is_dir() {
+            count += count_text_files_in_dir(path)?;
+        } else if is_text_file(path)? {
+            count += 1;
+        }
+    }
+    Ok(count)
+}
+
+fn count_text_files_in_dir(dir: &Path) -> Result<usize> {
+    let mut count = 0;
+    if let Ok(entries) = fs::read_dir(dir) {
+        for entry in entries.flatten() {
+            let path = entry.path();
+            if path.is_dir() {
+                count += count_text_files_in_dir(&path)?;
+            } else if is_text_file(&path)? {
+                count += 1;
+            }
+        }
+    }
+    Ok(count)
+}
+//////
 
 /// Check if a file is text by inspecting first 8KB
 fn is_text_file(path: &Path) -> Result<bool> {
@@ -185,6 +366,7 @@ pub fn get_app_dir() -> Result<PathBuf> {
 // PUBLIC API - PARSE OPERATIONS
 // ============================================================================
 
+
 fn create_parse_directory() -> Result<(PathBuf, File, String)> {
     let timestamp = Local::now().format("%Y-%m-%d_%H-%M-%S").to_string();
     let parse_dir = get_app_dir()?
@@ -201,60 +383,6 @@ fn create_parse_directory() -> Result<(PathBuf, File, String)> {
     Ok((parse_dir, content_file, timestamp))
 }
 
-/// Parse files asynchronously and save to directory structure
-///
-/// **Process:**
-/// 1. Creates parse directory (timestamp-based)
-/// 2. Writes all text file contents to content.txt
-/// 3. Collects metadata for all files
-/// 4. Saves metadata.json with file tree
-pub async fn parse_files_async(paths: Vec<String>) -> Result<ParseMetadata> {
-    let (parse_dir, mut output_file, parse_id) = create_parse_directory()?;
-
-    let mut parsed_files = Vec::new();
-    let mut total_size = 0u64;
-    let mut file_tree = Vec::new();
-
-    // Build file tree from input paths
-    for path_str in &paths {
-        let path = Path::new(path_str);
-        if path.exists() {
-            file_tree.push(build_file_tree(&path)?);
-        }
-    }
-
-    // Parse each file
-    for path_str in paths {
-        let path = Path::new(&path_str);
-
-        if path.is_dir() {
-            process_directory(&path, &mut output_file, &mut parsed_files, &mut total_size)?;
-        } else if is_text_file(&path)? {
-            write_file_content(&path, &mut output_file)?;
-
-            let metadata = get_file_metadata(&path)?;
-            total_size += metadata.size;
-            parsed_files.push(metadata);
-        }
-    }
-
-    // Create metadata structure
-    let metadata = ParseMetadata {
-        id: parse_id.clone(),
-        name: parse_id, // Initially same as ID
-        created_at: Local::now(),
-        files_count: parsed_files.len(),
-        total_size,
-        files: parsed_files,
-        file_tree,
-    };
-
-    // Save metadata to JSON file
-    let metadata_path = parse_dir.join(METADATA_FILENAME);
-    save_metadata(&metadata_path, &metadata)?;
-
-    Ok(metadata)
-}
 
 /// Build a file tree structure recursively
 pub fn build_file_tree(path: &Path) -> Result<ParsedPath> {
@@ -267,10 +395,15 @@ pub fn build_file_tree(path: &Path) -> Result<ParsedPath> {
 
     if path.is_dir() {
         let mut children = Vec::new();
+        let mut total_size = 0u64;
 
         if let Ok(entries) = fs::read_dir(path) {
             for entry in entries.flatten() {
                 if let Ok(tree) = build_file_tree(&entry.path()) {
+                    total_size += match &tree {
+                        ParsedPath::File { size, .. } => *size,
+                        ParsedPath::Directory { size, .. } => *size,
+                    };
                     children.push(tree);
                 }
             }
@@ -279,13 +412,22 @@ pub fn build_file_tree(path: &Path) -> Result<ParsedPath> {
             name,
             children,
             path: file_path,
+            size: total_size,
         })
     } else {
         let metadata = get_file_metadata(path)?;
+
+        let size = if is_text_file(path)? {
+            metadata.size
+        } else {
+            0
+        };
+
+
         Ok(ParsedPath::File {
             name,
+            size,
             path: file_path,
-            size: metadata.size,
             last_modified: metadata.last_modified,
         })
     }

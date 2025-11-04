@@ -12,11 +12,13 @@ use std::path::PathBuf;
 
 /// Parse files asynchronously
 #[tauri::command]
-pub async fn parse(paths: Vec<String>) -> Result<ParseMetadata, CommandError> {
-    let metadata = utils::parse_files_async(paths).await?;
+pub async fn parse(
+    paths: Vec<String>,
+    app: tauri::AppHandle,  // Add this parameter
+) -> Result<ParseMetadata, CommandError> {
+    let metadata = utils::parse_files_async(paths, app).await?;  // Pass app to the function
     Ok(metadata)
 }
-
 /// Get preview tree before parsing
 #[tauri::command]
 pub async fn get_preview_tree(
@@ -64,53 +66,88 @@ pub struct ParsedFileListItem {
 /// **Fast operation:**
 /// - Only reads metadata.json (small)
 /// - Does NOT load content.txt
+fn load_parse_directory(
+    path: &PathBuf,
+    dir_modified: DateTime<Local>,
+) -> Result<ParsedFileListItem, anyhow::Error> {
+    // Load parse metadata (expensive - reads and parses JSON)
+    let metadata = utils::load_metadata(&path)?;
+
+    // Get content file size
+    let content_path = utils::get_content_path(&path);
+    let content_size = fs::metadata(&content_path)?.len();
+
+    let dir_name = path
+        .file_name()
+        .and_then(|s| s.to_str())
+        .unwrap_or("unknown")
+        .to_string();
+
+    Ok(ParsedFileListItem {
+        id: dir_name,
+        name: metadata.name,
+        directory_path: path.to_string_lossy().to_string(),
+        file_size: content_size,
+        files_count: metadata.files_count,
+        total_size: metadata.total_size,
+        created_at: metadata.created_at,
+        last_modified: dir_modified,
+    })
+}
+
 #[tauri::command]
-pub async fn get_files() -> Result<Vec<ParsedFileListItem>, CommandError> {
+pub async fn get_files(limit: Option<usize>) -> Result<Vec<ParsedFileListItem>, CommandError> {
     let parsed_files_dir = utils::get_app_dir()?.join(PARSED_FILES_DIR);
-    let mut files_list = Vec::new();
+
+    // Check if directory exists first
+    if !parsed_files_dir.exists() {
+        return Ok(Vec::new());
+    }
+
+    // First pass: collect directory paths with their modification times (lightweight)
+    let mut dir_entries: Vec<(PathBuf, DateTime<Local>)> = Vec::new();
 
     for entry in fs::read_dir(parsed_files_dir)? {
         let entry = entry?;
         let path = entry.path();
 
-        // Only process directories
         if path.is_dir() {
-            // Get directory metadata for last_modified
-            let dir_metadata = fs::metadata(&path)?;
-            let dir_modified: DateTime<Local> = dir_metadata.modified()?.into();
-
-            // Load parse metadata
-            let metadata = utils::load_metadata(&path)?;
-
-            // Get content file size
-            let content_path = utils::get_content_path(&path);
-            let content_size = fs::metadata(&content_path)?.len();
-
-            let dir_name = path
-                .file_name()
-                .and_then(|s| s.to_str())
-                .unwrap_or("unknown")
-                .to_string();
-
-            files_list.push(ParsedFileListItem {
-                id: dir_name,
-                name: metadata.name,
-                directory_path: path.to_string_lossy().to_string(),
-                file_size: content_size,
-                files_count: metadata.files_count,
-                total_size: metadata.total_size,
-                created_at: metadata.created_at,
-                last_modified: dir_modified,
-            });
+            // Only get the modification time (cheap operation)
+            if let Ok(dir_metadata) = fs::metadata(&path) {
+                if let Ok(modified) = dir_metadata.modified() {
+                    let dir_modified: DateTime<Local> = modified.into();
+                    dir_entries.push((path, dir_modified));
+                }
+            }
         }
     }
 
-    // Sort by created_at descending - newest first
-    files_list.sort_by(|a, b| b.created_at.cmp(&a.created_at));
+    // Sort by modification time descending - newest first
+    dir_entries.sort_by(|a, b| b.1.cmp(&a.1));
+
+    // Apply limit before loading heavy metadata
+    if let Some(limit) = limit {
+        dir_entries.truncate(limit);
+    }
+
+    // Second pass: load full metadata only for the directories we need
+    let mut files_list = Vec::new();
+
+    for (path, dir_modified) in dir_entries {
+        // ✅ FIX: Use pattern matching to handle errors gracefully
+        // If loading fails for this directory, skip it and continue
+        match load_parse_directory(&path, dir_modified) {
+            Ok(item) => files_list.push(item),
+            Err(e) => {
+                eprintln!("Warning: Failed to load parse directory {:?}: {}", path, e);
+                // Continue with next directory instead of failing
+                continue;
+            }
+        }
+    }
 
     Ok(files_list)
 }
-
 // ============================================================================
 // FILE DETAIL VIEW
 // ============================================================================

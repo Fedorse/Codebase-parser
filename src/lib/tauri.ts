@@ -25,15 +25,34 @@ export const setSelectedRecursive = (nodes: FileTreeNode[], value = true): FileT
   return nodes;
 };
 
+// export const collectSelectedPath = (nodes: FileTreeNode[]): string[] => {
+//   const paths: string[] = [];
+//   for (const n of nodes) {
+//     if (n.type === 'File') {
+//       if (n.selected) paths.push(n.path);
+//     } else if (n.children?.length) {
+//       paths.push(...collectSelectedPath(n.children));
+//     }
+//   }
+//   return paths;
+// };
+
 export const collectSelectedPath = (nodes: FileTreeNode[]): string[] => {
   const paths: string[] = [];
+
   for (const n of nodes) {
-    if (n.type === 'File') {
-      if (n.selected) paths.push(n.path);
-    } else if (n.children?.length) {
+    // ✅ FIX: Check selected for BOTH files and directories
+    if (n.selected) {
+      paths.push(n.path);
+      continue; // Don't recurse into children if parent is selected
+    }
+
+    // Only recurse if directory is NOT selected
+    if (n.type === 'Directory' && n.children?.length) {
       paths.push(...collectSelectedPath(n.children));
     }
   }
+
   return paths;
 };
 
