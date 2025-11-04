@@ -26,7 +26,6 @@
  * ```
  */
 declare module '$env/static/private' {
-	export const NVM_INC: string;
 	export const TERM_PROGRAM: string;
 	export const NODE: string;
 	export const NVM_CD_FLAGS: string;
@@ -36,9 +35,7 @@ declare module '$env/static/private' {
 	export const TMPDIR: string;
 	export const HOMEBREW_REPOSITORY: string;
 	export const npm_config_global_prefix: string;
-	export const VSCODE_PYTHON_AUTOACTIVATE_GUARD: string;
 	export const TERM_PROGRAM_VERSION: string;
-	export const ZDOTDIR: string;
 	export const TAURI_CLI_VERBOSITY: string;
 	export const ORIGINAL_XDG_CURRENT_DESKTOP: string;
 	export const MallocNanoZone: string;
@@ -55,7 +52,6 @@ declare module '$env/static/private' {
 	export const npm_config_globalconfig: string;
 	export const SSH_AUTH_SOCK: string;
 	export const __CF_USER_TEXT_ENCODING: string;
-	export const VSCODE_PROFILE_INITIALIZED: string;
 	export const npm_execpath: string;
 	export const TAURI_ENV_PLATFORM: string;
 	export const npm_config_verify_deps_before_run: string;
@@ -64,13 +60,13 @@ declare module '$env/static/private' {
 	export const npm_package_json: string;
 	export const LaunchInstanceID: string;
 	export const __CFBundleIdentifier: string;
-	export const USER_ZDOTDIR: string;
 	export const TAURI_ENV_PLATFORM_VERSION: string;
 	export const TAURI_ENV_FAMILY: string;
 	export const npm_config_init_module: string;
 	export const npm_config_userconfig: string;
 	export const npm_command: string;
 	export const PWD: string;
+	export const VSCODE_NONCE: string;
 	export const npm_lifecycle_event: string;
 	export const npm_config__jsr_registry: string;
 	export const EDITOR: string;
@@ -84,7 +80,6 @@ declare module '$env/static/private' {
 	export const npm_config_node_gyp: string;
 	export const npm_package_version: string;
 	export const XPC_SERVICE_NAME: string;
-	export const VSCODE_INJECTION: string;
 	export const SHLVL: string;
 	export const HOME: string;
 	export const VSCODE_GIT_ASKPASS_MAIN: string;
@@ -94,7 +89,6 @@ declare module '$env/static/private' {
 	export const npm_config_cache: string;
 	export const npm_lifecycle_script: string;
 	export const VSCODE_GIT_IPC_HANDLE: string;
-	export const NVM_BIN: string;
 	export const npm_config_user_agent: string;
 	export const VSCODE_GIT_ASKPASS_NODE: string;
 	export const INFOPATH: string;
@@ -137,7 +131,6 @@ declare module '$env/static/public' {
  */
 declare module '$env/dynamic/private' {
 	export const env: {
-		NVM_INC: string;
 		TERM_PROGRAM: string;
 		NODE: string;
 		NVM_CD_FLAGS: string;
@@ -147,9 +140,7 @@ declare module '$env/dynamic/private' {
 		TMPDIR: string;
 		HOMEBREW_REPOSITORY: string;
 		npm_config_global_prefix: string;
-		VSCODE_PYTHON_AUTOACTIVATE_GUARD: string;
 		TERM_PROGRAM_VERSION: string;
-		ZDOTDIR: string;
 		TAURI_CLI_VERBOSITY: string;
 		ORIGINAL_XDG_CURRENT_DESKTOP: string;
 		MallocNanoZone: string;
@@ -166,7 +157,6 @@ declare module '$env/dynamic/private' {
 		npm_config_globalconfig: string;
 		SSH_AUTH_SOCK: string;
 		__CF_USER_TEXT_ENCODING: string;
-		VSCODE_PROFILE_INITIALIZED: string;
 		npm_execpath: string;
 		TAURI_ENV_PLATFORM: string;
 		npm_config_verify_deps_before_run: string;
@@ -175,13 +165,13 @@ declare module '$env/dynamic/private' {
 		npm_package_json: string;
 		LaunchInstanceID: string;
 		__CFBundleIdentifier: string;
-		USER_ZDOTDIR: string;
 		TAURI_ENV_PLATFORM_VERSION: string;
 		TAURI_ENV_FAMILY: string;
 		npm_config_init_module: string;
 		npm_config_userconfig: string;
 		npm_command: string;
 		PWD: string;
+		VSCODE_NONCE: string;
 		npm_lifecycle_event: string;
 		npm_config__jsr_registry: string;
 		EDITOR: string;
@@ -195,7 +185,6 @@ declare module '$env/dynamic/private' {
 		npm_config_node_gyp: string;
 		npm_package_version: string;
 		XPC_SERVICE_NAME: string;
-		VSCODE_INJECTION: string;
 		SHLVL: string;
 		HOME: string;
 		VSCODE_GIT_ASKPASS_MAIN: string;
@@ -205,7 +194,6 @@ declare module '$env/dynamic/private' {
 		npm_config_cache: string;
 		npm_lifecycle_script: string;
 		VSCODE_GIT_IPC_HANDLE: string;
-		NVM_BIN: string;
 		npm_config_user_agent: string;
 		VSCODE_GIT_ASKPASS_NODE: string;
 		INFOPATH: string;

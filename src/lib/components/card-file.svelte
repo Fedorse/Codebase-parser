@@ -1,10 +1,4 @@
 <script lang="ts">
-<<<<<<< Updated upstream
-=======
-  import { openFileInfolder } from '$lib/tauri';
-  import { formatFileSize, formatDate } from '$lib/utils';
-  import { goto } from '$app/navigation';
->>>>>>> Stashed changes
   import {
     Trash2,
     Code,
@@ -20,7 +14,7 @@
   import Badge from './ui/badge/badge.svelte';
   import * as Tooltip from '$lib/components/ui/tooltip/index.js';
   import { Button } from '$lib/components/ui/button/index';
-  import { formatFileSize } from '$lib/utils';
+  import { formatFileSize, formatDate } from '$lib/utils';
   import { openFileInfolder } from '$lib/tauri';
   import ConfirmDialog from '$lib/components/confirm-dialog.svelte';
   import * as DropdownMenu from '$lib/components/ui/dropdown-menu/index.js';
@@ -62,17 +56,10 @@
       console.error('Failed to open file:', err);
     }
   };
-<<<<<<< Updated upstream
-  const gotoGraph = (file: { path: string }) => goto(`/graph/${file.path}`);
-  const gotoEdit = (file: SavedFiles) => goto(`/files/${encodeURIComponent(file.path)}/edit`);
-  const gotoEditRename = (file: SavedFiles) =>
-    goto(`/files/${encodeURIComponent(file.path)}/edit`, {
-=======
   const gotoGraph = (file: { id: string }) => goto(`/graph/${file.id}`);
   const gotoEdit = (file: File) => goto(`/files/${file.id}/edit`);
   const gotoEditRename = (file: File) =>
     goto(`/files/${file.id}/edit`, {
->>>>>>> Stashed changes
       state: { focus: 'rename' }
     });
 </script>
@@ -90,37 +77,6 @@
       </p>
     </Card.Description>
   </Card.Header>
-  <!-- <Card.Content class="grid grid-cols-2 gap-3">
-    <div class="bg-muted/50 rounded-lg border p-3">
-      <div class="text-muted-foreground text-xs">Files</div>
-      <div class="mt-1 font-mono text-2xl font-semibold">1,890</div>
-    </div>
-    <div class="bg-muted/50 rounded-lg border p-3">
-      <div class="text-muted-foreground text-xs">Size</div>
-      <div class="mt-1 text-sm font-medium">{formatFileSize(file.size)}</div>
-    </div>
-  </Card.Content> -->
-
-  <!-- <Card.Content class="grid grid-cols-2 gap-2  text-sm">
-    <div class="bg-muted/50 flex items-center gap-2 rounded-md p-2">
-      <div class="bg-primary/10 rounded p-1.5">
-        <FileText class="text-primary h-4 w-4" />
-      </div>
-      <div>
-        <div class="font-semibold">1,890</div>
-        <div class="text-muted-foreground text-xs">files</div>
-      </div>
-    </div>
-    <div class="bg-muted/50 flex items-center gap-2 rounded-md p-2">
-      <div class="bg-primary/10 rounded p-1.5">
-        <HardDrive class="text-primary h-4 w-4" />
-      </div>
-      <div>
-        <div class="text-muted-foreground text-xs">Size</div>
-        <div class="font-mono text-xs">{formatFileSize(file.size)}</div>
-      </div>
-    </div>
-  </Card.Content> -->
 
   <Card.Content
     class="flex cursor-pointer flex-col items-center py-4"

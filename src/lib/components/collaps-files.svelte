@@ -4,12 +4,6 @@
   import { ChevronRight } from '@lucide/svelte';
   import FileText from '@lucide/svelte/icons/file-text';
   import Button from '$lib/components/ui/button/button.svelte';
-  import type { SavedFiles } from '$lib/tauri';
-
-<<<<<<< Updated upstream
-  let { limit = 3, files = [] as SavedFiles[] } = $props<any>();
-=======
-  import type { File } from '$lib/type';
 
   type Props = {
     limit?: number;
@@ -28,7 +22,6 @@
   };
 
   let { limit = 3, files = [] }: Props = $props();
->>>>>>> Stashed changes
 
   let open = $state(true);
   let loading = $state(false);

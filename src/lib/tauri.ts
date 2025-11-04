@@ -17,8 +17,8 @@ export type FileTree = {
   children?: FileTree[];
   size?: number;
   lastModified?: string;
-  totalSize?: number; // сумма размеров всех файлов внутри (рекурсивно)
-  filesCount?: number; // количество файлов внутри (рекурси
+  totalSize?: number;
+  filesCount?: number;
 };
 
 type ParsedFileListItem = {

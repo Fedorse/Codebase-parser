@@ -10,6 +10,11 @@
 		"src/routes/files/+layout.ts",
 		"src/routes/+layout.ts"
 	],
+	"/files/[id]/edit": [
+		"src/routes/files/[id]/edit/+page.ts",
+		"src/routes/files/+layout.ts",
+		"src/routes/+layout.ts"
+	],
 	"/files/[...path]/edit": [
 		"src/routes/files/[...path]/edit/+page.ts",
 		"src/routes/files/+layout.ts",

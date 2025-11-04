@@ -1,22 +1,16 @@
 <script lang="ts">
   import { Checkbox } from '$lib/components/ui/checkbox';
   import { Label } from '$lib/components/ui/label';
-  import FileIcon from '@lucide/svelte/icons/file';
-  import FolderIcon from '@lucide/svelte/icons/folder';
-  import ChevronRight from '@lucide/svelte/icons/chevron-right';
   import * as Collapsible from '$lib/components/ui/collapsible';
-<<<<<<< Updated upstream
   import Self from '$lib/components/file-tree-item.svelte';
-  import { setSelected } from '$lib/utils';
-  import type { FileTreeNode } from '$lib/tauri.ts';
-=======
-  import { FileIcon, FolderIcon, ChevronRight } from '@lucide/svelte/icons';
-  import { formatFileSize } from '$lib/utils';
 
-  import type { FileTree } from '$lib/type';
->>>>>>> Stashed changes
+  import { FileIcon, FolderIcon, ChevronRight } from '@lucide/svelte/icons';
+  import { formatFileSize, setSelected } from '$lib/utils';
 
   let { node, isRoot = false } = $props();
+  $effect(() => {
+    console.log('node', node);
+  });
 
   let isOpen = $state(isRoot && node.type === 'Directory');
 
@@ -29,8 +23,8 @@
       return { isChecked: node.selected, isIndeterminate: false };
     }
 
-    const allChildrenChecked = node.children.every((child: FileTreeNode) => child.selected);
-    const noChildrenChecked = node.children.every((child: FileTreeNode) => !child.selected);
+    const allChildrenChecked = node.children.every((child) => child.selected);
+    const noChildrenChecked = node.children.every((child) => !child.selected);
 
     return {
       isChecked: allChildrenChecked,
