@@ -1,12 +1,13 @@
 <script lang="ts">
-  import Self from '$lib/components/file-tree-item.svelte';
-  import { setSelected } from '$lib/utils';
   import { Checkbox } from '$lib/components/ui/checkbox';
   import { Label } from '$lib/components/ui/label';
   import * as Collapsible from '$lib/components/ui/collapsible';
-  import { FileIcon, FolderIcon, ChevronRight } from '@lucide/svelte/icons';
+  import Self from '$lib/components/file-tree-item.svelte';
+  import { setSelected } from '$lib/utils';
+  import type { FileTreeNode } from '$lib/tauri.ts';
 
-  import type { FileTree } from '$lib/type';
+  import { FileIcon, FolderIcon, ChevronRight, FolderOpen } from '@lucide/svelte/icons';
+  import { formatFileSize } from '$lib/utils';
 
   let { node, isRoot = false } = $props();
 
@@ -21,8 +22,8 @@
       return { isChecked: node.selected, isIndeterminate: false };
     }
 
-    const allChildrenChecked = node.children.every((child: FileTree) => child.selected);
-    const noChildrenChecked = node.children.every((child: FileTree) => !child.selected);
+    const allChildrenChecked = node.children.every((child: FileTreeNode) => child.selected);
+    const noChildrenChecked = node.children.every((child: FileTreeNode) => !child.selected);
 
     return {
       isChecked: allChildrenChecked,
@@ -32,23 +33,30 @@
 </script>
 
 {#if node.type === 'File'}
-  <li class="flex items-center gap-2 pt-1">
+  <li class=" hover:bg-muted/50 flex items-center gap-2 pt-1 transition-all">
     <Checkbox bind:checked={node.selected} onCheckedChange={onToggle} />
     <div
       class={{
-        'flex items-center gap-2': true,
+        'flex  w-full items-center gap-2': true,
         'text-primary ': node.selected,
         'text-primary/20': !node.selected
       }}
     >
-      <FileIcon class="size-5" />
-      <span>{node.name}</span>
+      <FileIcon class="size-4.5" />
+      <Label class="flex-1 cursor-pointer select-none">
+        {node.name}
+      </Label>
+      {#if node.size}
+        <span class="pr-4 text-xs opacity-70">
+          {formatFileSize(node.size)}
+        </span>
+      {/if}
     </div>
   </li>
 {:else}
   <Collapsible.Root class="flex flex-col" bind:open={isOpen}>
     <Collapsible.Trigger>
-      <li class="flex flex-row items-center gap-2">
+      <li class="hover:bg-muted/50 flex flex-row items-center gap-2 transition-colors">
         <ChevronRight
           class={{
             'size-4 transition-transform duration-200': true,
@@ -63,15 +71,25 @@
         />
         <div
           class={{
-            'flex items-center gap-2': true,
-            'text-primary ': node.selected,
+            'flex w-full items-center gap-2': true,
+            'text-primary': node.selected,
             'text-primary/20': !node.selected
           }}
         >
-          <FolderIcon class="size-6" />
+          {#if isOpen}
+            <FolderOpen class="size-5" />
+          {:else}
+            <FolderIcon class="size-5" />
+          {/if}
+
           <Label class="flex-1 cursor-pointer select-none">
             {node.name}
           </Label>
+          {#if node.size}
+            <span class="ml-2 pr-4 text-xs opacity-70">
+              {formatFileSize(node.size)}
+            </span>
+          {/if}
         </div>
       </li>
     </Collapsible.Trigger>

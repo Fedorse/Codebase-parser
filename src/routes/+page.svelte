@@ -37,6 +37,10 @@
   let unlistenDrag: () => void;
   let unlistenProgress: () => void;
 
+  $effect(() => {
+    console.log('filesTreeNodes', filesTreeNodes);
+  });
+
   // Computed state
   let activeParses = $derived(
     Array.from(parseQueue.values()).filter((p) => p.parse_progress < 100)
@@ -67,7 +71,6 @@
       return;
     }
 
-    // Close dialog and clear tree immediately
     isDialogOpen = false;
     filesTreeNodes = [];
 
@@ -78,7 +81,6 @@
       console.error(err);
       toast.error('Parse failed');
     }
-    // ✅ No isLoading here - button stays enabled!
   };
 
   const handleOpenFiles = async () => {
@@ -86,7 +88,7 @@
 
     if (!selected) return;
 
-    isLoadingPreview = true; // ✅ Only for preview
+    isLoadingPreview = true;
     try {
       filesTreeNodes = await getPreviewTreeUI(selected);
       isDialogOpen = true;
@@ -94,7 +96,7 @@
       console.error(err);
       toast.error('Failed to open selected paths');
     } finally {
-      isLoadingPreview = false; // ✅ Always reset
+      isLoadingPreview = false;
     }
   };
 
@@ -269,6 +271,7 @@
           {:else}
             <div class="flex flex-col items-center gap-2">
               <div class="mb-1 text-7xl leading-none">📁</div>
+
               {#if hasActiveParsing}
                 <p class="text-muted-foreground text-sm">
                   {activeParses.length} parse{activeParses.length > 1 ? 's' : ''} in progress...
@@ -280,7 +283,7 @@
       </div>
     </Card.Content>
     <div class="border-border border-t px-6 pt-4">
-      <RecentFiles limit={3} files={data.recentFiles} />
+      <RecentFiles files={data.recentFiles} />
     </div>
   </Card.Root>
 

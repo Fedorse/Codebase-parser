@@ -4,20 +4,26 @@
   import { ChevronRight } from '@lucide/svelte';
   import FileText from '@lucide/svelte/icons/file-text';
   import Button from '$lib/components/ui/button/button.svelte';
-
-  import type { File } from '$lib/type';
+  import { Skeleton } from '$lib/components/ui/skeleton';
 
   type Props = {
-    limit?: number;
-    files: File[];
+    files: Promise<ParsedFileListItem[]>;
   };
 
-  let { limit = 3, files = [] }: Props = $props();
+  type ParsedFileListItem = {
+    id: string;
+    name: string;
+    directory_path: string;
+    file_size: number;
+    files_count: number;
+    total_size: number;
+    created_at: string;
+    last_modified: string;
+  };
+
+  let { files }: Props = $props();
 
   let open = $state(true);
-  let loading = $state(false);
-
-  const recent = $derived(files.slice(0, limit));
 
   const toggle = () => (open = !open);
 </script>
@@ -36,29 +42,52 @@
 
   <Collapsible.Content>
     <div class="pt-3">
-      {#if loading}
-        <!-- svelte-ignore element_invalid_self_closing_tag -->
-        <div class="bg-muted/40 h-16 w-full animate-pulse rounded-md" />
-      {:else if recent.length}
-        <ul class="divide-border border-border/70 divide-y rounded-md border">
-          {#each recent as f}
-            <li>
-              <a href="/files" class="hover:bg-muted/40 flex items-center gap-3 px-3 py-2">
-                <FileText class="text-muted-foreground size-4" />
-                <div class="min-w-0 flex-1">
-                  <div class="truncate text-sm font-medium">{f.name}</div>
-                  <div class="text-muted-foreground truncate text-xs">{f.path}</div>
-                </div>
-                <div class="text-muted-foreground text-xs">{formatFileSize(f.size)}</div>
-              </a>
-            </li>
+      {#await files}
+        <div class="divide-border border-border/70 divide-y rounded-md border">
+          {#each Array(3) as _}
+            <div class="flex items-center gap-3 px-3 py-2">
+              <Skeleton class="h-4 w-4 rounded" />
+              <div class="min-w-0 flex-1 space-y-2">
+                <Skeleton class="h-4 w-3/4" />
+                <Skeleton class="h-3 w-full" />
+              </div>
+              <Skeleton class="h-3 w-12" />
+            </div>
           {/each}
-        </ul>
-      {:else}
-        <div class="text-muted-foreground rounded-md border border-dashed p-4 text-center text-xs">
-          No saved files
         </div>
-      {/if}
-    </div>
-  </Collapsible.Content>
+      {:then resolvedFiles}
+        <ul class="divide-border border-border/70 divide-y rounded-md border">
+          {#if resolvedFiles.length > 0}
+            {#each resolvedFiles as f}
+              <li>
+                <a
+                  href="/files/{f.id}/edit"
+                  class="hover:bg-muted/40 flex items-center gap-3 px-3 py-2"
+                >
+                  <FileText class="text-muted-foreground size-4" />
+                  <div class="min-w-0 flex-1">
+                    <div class="truncate text-sm font-medium">{f.name}</div>
+                    <div class="text-muted-foreground truncate text-xs">{f.directory_path}</div>
+                  </div>
+                  <div class="text-muted-foreground text-xs">{formatFileSize(f.total_size)}</div>
+                </a>
+              </li>
+            {/each}
+          {:else}
+            <div
+              class="text-muted-foreground rounded-md border border-dashed p-4 text-center text-xs"
+            >
+              No saved files
+            </div>
+          {/if}
+        </ul>
+      {:catch error}
+        <div
+          class="rounded-md border border-red-200 bg-red-50 p-4 text-center text-xs text-red-600"
+        >
+          Failed to load files
+        </div>
+      {/await}
+    </div></Collapsible.Content
+  >
 </Collapsible.Root>

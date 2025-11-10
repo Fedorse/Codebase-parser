@@ -1,7 +1,8 @@
 <script lang="ts">
   import { openFileInfolder } from '$lib/tauri';
-  import { formatFileSize } from '$lib/utils';
+  import { formatFileSize, formatDate } from '$lib/utils';
   import { goto } from '$app/navigation';
+
   import {
     Trash2,
     Code,
@@ -11,27 +12,29 @@
     Ellipsis,
     Pencil
   } from '@lucide/svelte/icons';
+
   import * as Card from '$lib/components/ui/card/index.js';
   import { Separator } from '$lib/components/ui/separator/index.js';
   import Badge from './ui/badge/badge.svelte';
   import * as Tooltip from '$lib/components/ui/tooltip/index.js';
   import { Button } from '$lib/components/ui/button/index';
+
   import ConfirmDialog from '$lib/components/confirm-dialog.svelte';
   import * as DropdownMenu from '$lib/components/ui/dropdown-menu/index.js';
 
-  import type { File } from '$lib/type';
+  import type { SavedFiles } from '$lib/tauri';
 
   const THIRTY_MB_SIZE = 30 * 1024 * 1024;
 
   type Props = {
-    file: File;
-    handleDelete: (file: File) => void;
+    file: SavedFiles;
+    handleDelete: (file: SavedFiles) => void;
   };
 
   let { file, handleDelete }: Props = $props();
 
   let open = $state(false);
-  let isLargeFile = $derived(file.size > THIRTY_MB_SIZE);
+  let isLargeFile = $derived(file.file_size > THIRTY_MB_SIZE);
 
   const menuItems = [
     { label: 'Edit', action: () => gotoEdit(file), icon: Code },
@@ -40,24 +43,25 @@
     { label: 'Rename file', action: () => gotoEditRename(file), icon: Pencil, separator: true },
     {
       label: 'Delete',
-      action: () => (open = true),
+      action: () => handleDelete(file),
       icon: Trash2,
       variant: 'destructive',
       separator: true
     }
   ];
 
-  const handleOpenDir = async (file: File) => {
+  const handleOpenDir = async (file: SavedFiles) => {
     try {
       await openFileInfolder(file);
     } catch (err) {
       console.error('Failed to open file:', err);
     }
   };
-  const gotoGraph = (file: { path: string }) => goto(`/graph/${file.path}`);
-  const gotoEdit = (file: File) => goto(`/files/${encodeURIComponent(file.path)}/edit`);
+
+  const gotoGraph = (file: { id: string }) => goto(`/graph/${file.id}`);
+  const gotoEdit = (file: File) => goto(`/files/${file.id}/edit`);
   const gotoEditRename = (file: File) =>
-    goto(`/files/${encodeURIComponent(file.path)}/edit`, {
+    goto(`/files/${file.id}/edit`, {
       state: { focus: 'rename' }
     });
 </script>
@@ -71,20 +75,21 @@
     <Card.Description>
       <p class="text-muted-foreground flex items-center gap-1.5 text-xs">
         <Clock class="size-3" />
-        <span>Updated 2h ago</span>
+        <span>{formatDate(file.last_modified)}</span>
       </p>
     </Card.Description>
   </Card.Header>
+
   <Card.Content
     class="flex cursor-pointer flex-col items-center py-4"
     onclick={() => gotoEdit(file)}
     title="Edit file"
   >
-    <div class="mb-2 font-mono text-3xl font-bold tracking-tight">1,890</div>
+    <div class="mb-2 font-mono text-3xl font-bold tracking-tight">{file.files_count}</div>
     <div class="text-muted-foreground mb-2 text-sm">files parsed</div>
     <div>
       <Badge variant="outline" class="text-muted-foreground ">
-        Size {formatFileSize(file.size)}
+        Size {formatFileSize(file.file_size)}
       </Badge>
       {#if isLargeFile}
         <span class="text-border">•</span>

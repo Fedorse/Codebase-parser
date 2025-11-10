@@ -28,7 +28,7 @@
   const WIDTH_NODE = 160;
   const HEIGHT_NODE = 46;
 
-  const { roots = [] } = $props<{ roots?: FileNode[] }>();
+  const { tree = [] } = $props<{ tree?: FileNode[] }>();
 
   const { fitView } = useSvelteFlow();
 
@@ -53,7 +53,7 @@
     }
   };
 
-  for (const r of roots) if (r.type === 'Directory') expandedDirs.add(r.path);
+  for (const r of tree) if (r.type === 'Directory') expandedDirs.add(r.path);
 
   const toggleDir = (path: string) => {
     const next = expandedDirs;
@@ -142,7 +142,7 @@
   };
 
   const rebuildAndLayout = () => {
-    const { outNodes, outEdges } = collectVisible(roots);
+    const { outNodes, outEdges } = collectVisible(tree);
     const { nodes: n, edges: e } = getLayoutedElements(outNodes, outEdges, { direction });
     nodes = n;
     edges = e;
