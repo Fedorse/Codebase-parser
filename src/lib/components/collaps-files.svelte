@@ -64,7 +64,7 @@
                   href="/files/{f.id}/edit"
                   class="hover:bg-muted/40 flex items-center gap-3 px-3 py-2"
                 >
-                  <FileText class="text-muted-foreground size-4" />
+                  <FileText class="text-muted-foreground size-5 stroke-1" />
                   <div class="min-w-0 flex-1">
                     <div class="truncate text-sm font-medium">{f.name}</div>
                     <div class="text-muted-foreground truncate text-xs">{f.directory_path}</div>

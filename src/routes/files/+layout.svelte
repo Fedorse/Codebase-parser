@@ -4,10 +4,13 @@
   import CardSkeleton from '@/lib/components/card-file-skeleton.svelte';
   import { toast } from 'svelte-sonner';
   import { deleteFile } from '@/lib/tauri.js';
+  import { getLoadingContext } from '@/lib/state-utils/store-loading.svelte.js';
+  import { onMount } from 'svelte';
 
   let { data, children } = $props();
 
   let localFiles = $state([]);
+  let loading = getLoadingContext();
 
   const handleDelete = async (file: File) => {
     try {
@@ -21,8 +24,14 @@
     }
   };
 
+  // onMount(async () => {
+  //   await loading.withProgress(async () => {
+  //     localFiles = await data.files;
+  //   });
+  // });
+
   $effect(() => {
-    data.files.then((file) => (localFiles = file));
+    data.files.then((files) => (localFiles = files));
   });
 </script>
 

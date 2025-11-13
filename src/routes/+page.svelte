@@ -10,8 +10,35 @@
   import * as Card from '$lib/components/ui/card';
   import FileDialogTree from '$lib/components/file-dialog-tree.svelte';
   import RecentFiles from '$lib/components/collaps-files.svelte';
-  import { Progress } from '$lib/components/ui/progress/index.js';
+
   import type { FileTree } from '$lib/type';
+  import ParseQueue from '$lib/components/card-queue.svelte';
+
+  const addMockParseData = () => {
+    // Активный парсинг (45%)
+    parseQueue.set('2025-11-11_14-30-45', {
+      parse_id: '2025-11-11_14-30-45',
+      parse_progress: 45.7,
+      files_amount: 125,
+      result_file_path: null
+    });
+
+    parseQueue.set('2025-11-11_14-31-12', {
+      parse_id: '2025-11-11_14-31-12',
+      parse_progress: 78.3,
+      files_amount: 89,
+      result_file_path: null
+    });
+
+    parseQueue.set('2025-11-11_14-29-03', {
+      parse_id: '2025-11-11_14-29-03',
+      parse_progress: 100,
+      files_amount: 234,
+      result_file_path: '/home/user/.tauri-parse-files/parsed_files/2025-11-11_14-29-03/content.txt'
+    });
+
+    parseQueue = new Map(parseQueue);
+  };
 
   type DragEventPayload = {
     type: 'over' | 'drop' | 'leave' | 'enter';
@@ -26,6 +53,8 @@
     result_file_path: string | null;
   }
 
+  const MIN_STEP_PROGRESS = 0.5;
+
   let { data } = $props();
 
   let filesTreeNodes = $state<FileTree[]>([]);
@@ -33,15 +62,10 @@
 
   let isDialogOpen = $state(false);
   let isDragging = $state(false);
-  let isLoadingPreview = $state(false); // ✅ Renamed and more specific
+  let isLoadingPreview = $state(false);
   let unlistenDrag: () => void;
   let unlistenProgress: () => void;
 
-  $effect(() => {
-    console.log('filesTreeNodes', filesTreeNodes);
-  });
-
-  // Computed state
   let activeParses = $derived(
     Array.from(parseQueue.values()).filter((p) => p.parse_progress < 100)
   );
@@ -53,14 +77,14 @@
   const handleDroppedFiles = async (paths: string[]) => {
     if (paths.length === 0) return;
     try {
-      isLoadingPreview = true; // ✅ Only for preview
+      isLoadingPreview = true;
       filesTreeNodes = await getPreviewTreeUI(paths);
       isDialogOpen = true;
     } catch (err) {
       console.error(err);
       toast.error('Failed to load preview tree');
     } finally {
-      isLoadingPreview = false; // ✅ Always reset
+      isLoadingPreview = false;
     }
   };
 
@@ -76,7 +100,7 @@
 
     try {
       await parsePaths(paths);
-      toast.success('Parse started');
+      toast.success('Parse successfully completed');
     } catch (err) {
       console.error(err);
       toast.error('Parse failed');
@@ -144,19 +168,27 @@
       unlistenProgress = await listen<ParseProgress>('parse-progress', (event) => {
         const progress = event.payload;
 
-        // Update or add to queue
+        const prev = parseQueue.get(progress.parse_id);
+        const isComplete = progress.parse_progress === 100;
+
+        if (
+          !isComplete &&
+          prev &&
+          Math.abs(progress.parse_progress - prev.parse_progress) < MIN_STEP_PROGRESS
+        ) {
+          return;
+        }
+
         parseQueue.set(progress.parse_id, progress);
         parseQueue = new Map(parseQueue);
 
-        // When parsing completes
         if (progress.parse_progress === 100) {
           invalidateAll();
-          toast.success(`Parse completed: ${progress.parse_id}`);
 
           // Auto-remove after 5 seconds
-          setTimeout(() => {
-            removeFromQueue(progress.parse_id);
-          }, 5000);
+          // setTimeout(() => {
+          //   removeFromQueue(progress.parse_id);
+          // }, 5000);
         }
       });
     } catch (error) {
@@ -167,6 +199,7 @@
   onMount(() => {
     initDragAndDrop();
     initParseProgressListener();
+    addMockParseData();
   });
 
   onDestroy(() => {
@@ -176,64 +209,6 @@
 </script>
 
 <main class="flex w-full flex-col items-center gap-4 pt-4 md:pt-8 xl:pt-28 2xl:pt-32">
-  <!-- Parse Queue Visualization -->
-  {#if parseQueue.size > 0}
-    <Card.Root class="w-full max-w-5xl bg-blue-50 dark:bg-blue-950/20">
-      <Card.Header>
-        <div class="flex items-center justify-between">
-          <div>
-            <Card.Title class="text-lg">Parse Queue ({parseQueue.size})</Card.Title>
-            <Card.Description>
-              {activeParses.length} active, {completedParses.length} completed
-            </Card.Description>
-          </div>
-          {#if completedParses.length > 0}
-            <Button variant="outline" size="sm" onclick={clearCompleted}>Clear Completed</Button>
-          {/if}
-        </div>
-      </Card.Header>
-      <Card.Content class="space-y-3">
-        {#each Array.from(parseQueue.values()) as parse (parse.parse_id)}
-          <div
-            class="rounded-lg border bg-white p-4 dark:bg-gray-900"
-            class:border-green-500={parse.parse_progress === 100}
-            class:border-blue-500={parse.parse_progress < 100}
-          >
-            <div class="mb-2 flex items-center justify-between">
-              <div class="flex items-center gap-2">
-                {#if parse.parse_progress === 100}
-                  <span class="text-2xl">✅</span>
-                {:else}
-                  <span class="text-2xl">⏳</span>
-                {/if}
-                <div>
-                  <p class="font-mono text-sm font-medium">{parse.parse_id}</p>
-                  <p class="text-muted-foreground text-xs">{parse.files_amount} files</p>
-                </div>
-              </div>
-              <div class="flex items-center gap-2">
-                <span class="text-sm font-semibold">
-                  {parse.parse_progress.toFixed(1)}%
-                </span>
-                {#if parse.parse_progress === 100}
-                  <Button variant="ghost" size="sm" onclick={() => removeFromQueue(parse.parse_id)}>
-                    ✕
-                  </Button>
-                {/if}
-              </div>
-            </div>
-            <Progress value={parse.parse_progress} class="h-2" />
-            {#if parse.result_file_path}
-              <p class="text-muted-foreground mt-2 truncate text-xs">
-                {parse.result_file_path}
-              </p>
-            {/if}
-          </div>
-        {/each}
-      </Card.Content>
-    </Card.Root>
-  {/if}
-
   <Card.Root class="bg-card/20 w-full max-w-5xl justify-between pt-6 pb-4">
     <Card.Header class="flex justify-between">
       <div class="flex flex-col gap-2">
@@ -282,6 +257,8 @@
         </div>
       </div>
     </Card.Content>
+
+    <ParseQueue {parseQueue} {removeFromQueue} />
     <div class="border-border border-t px-6 pt-4">
       <RecentFiles files={data.recentFiles} />
     </div>

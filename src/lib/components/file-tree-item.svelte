@@ -42,7 +42,7 @@
         'text-primary/20': !node.selected
       }}
     >
-      <FileIcon class="size-4.5" />
+      <FileIcon class="size-4.5 stroke-1" />
       <Label class="flex-1 cursor-pointer select-none">
         {node.name}
       </Label>
@@ -77,9 +77,9 @@
           }}
         >
           {#if isOpen}
-            <FolderOpen class="size-5" />
+            <FolderOpen class="size-5 stroke-1" />
           {:else}
-            <FolderIcon class="size-5" />
+            <FolderIcon class="size-5 stroke-1" />
           {/if}
 
           <Label class="flex-1 cursor-pointer select-none">
