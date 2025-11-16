@@ -37,12 +37,12 @@
     <Checkbox bind:checked={node.selected} onCheckedChange={onToggle} />
     <div
       class={{
-        'flex  w-full items-center gap-2': true,
+        'flex w-full items-center gap-2': true,
         'text-primary ': node.selected,
         'text-primary/20': !node.selected
       }}
     >
-      <FileIcon class="size-4.5 stroke-1" />
+      <FileIcon class="size-4.5 cursor-pointer stroke-1" />
       <Label class="flex-1 cursor-pointer select-none">
         {node.name}
       </Label>
@@ -59,7 +59,7 @@
       <li class="hover:bg-muted/50 flex flex-row items-center gap-2 transition-colors">
         <ChevronRight
           class={{
-            'size-4 transition-transform duration-200': true,
+            'size-4 cursor-pointer transition-transform duration-200': true,
             'rotate-90': isOpen
           }}
         />
@@ -77,9 +77,9 @@
           }}
         >
           {#if isOpen}
-            <FolderOpen class="size-5 stroke-1" />
+            <FolderOpen class="size-5 cursor-pointer stroke-1" />
           {:else}
-            <FolderIcon class="size-5 stroke-1" />
+            <FolderIcon class="size-5 cursor-pointer stroke-1" />
           {/if}
 
           <Label class="flex-1 cursor-pointer select-none">

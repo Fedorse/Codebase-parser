@@ -53,7 +53,7 @@
 
   <div class="flex items-center gap-2">
     {#if parseQueue.size > 0}
-      <div class="bg-card/80 flex items-center gap-3 rounded-lg border px-3 py-1">
+      <div class="bg-card/80 flex items-center gap-3 rounded-md border px-3 py-1">
         <div
           class={{
             'text-warn': parseQueue.hasActiveParsing,

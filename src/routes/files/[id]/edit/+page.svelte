@@ -260,7 +260,7 @@
       class="text-muted-foreground">View graph</Button
     >
     <Button variant="outline" class="text-muted-foreground" size="sm" onclick={handleCopy}>
-      <Copy class=" mr-2 size-4" />
+      <Copy class=" mr-2 size-4 stroke-1" />
 
       {isCopied ? 'Copied!' : 'Copy'}
     </Button>

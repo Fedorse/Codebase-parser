@@ -25,7 +25,7 @@ export class Loading {
 
     this.state = 'stopped';
     await this.progress.set(100, { duration: 100 });
-    await new Promise((resolve) => setTimeout(resolve, 200));
+    // await new Promise((resolve) => setTimeout(resolve, 200));
     this.progress = null;
   }
 

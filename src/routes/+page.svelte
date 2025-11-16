@@ -1,9 +1,7 @@
 <script lang="ts">
   import { open } from '@tauri-apps/plugin-dialog';
   import { getCurrentWebview } from '@tauri-apps/api/webview';
-  import { listen } from '@tauri-apps/api/event';
   import { onDestroy, onMount } from 'svelte';
-  import { invalidateAll } from '$app/navigation';
   import { toast } from 'svelte-sonner';
   import { collectSelectedPath, parsePaths, getPreviewTreeUI } from '$lib/tauri';
   import { Button } from '$lib/components/ui/button/index';
@@ -11,8 +9,8 @@
   import FileDialogTree from '$lib/components/file-dialog-tree.svelte';
   import RecentFiles from '$lib/components/collaps-files.svelte';
   import ParseQueue from '$lib/components/card-queue.svelte';
-
-  import { parseQueue } from '$lib/state-utils/store-parse-queue.svelte';
+  import * as Empty from '$lib/components/ui/empty/index.js';
+  import { Spinner } from '$lib/components/ui/spinner/index.js';
 
   import type { FileTree } from '$lib/type';
 
@@ -29,17 +27,19 @@
   let isDialogOpen = $state(false);
   let isDragging = $state(false);
   let isLoadingPreview = $state(false);
+
   let unlistenDrag: () => void;
 
   const handleDroppedFiles = async (paths: string[]) => {
     if (paths.length === 0) return;
+
     try {
       isLoadingPreview = true;
       filesTreeNodes = await getPreviewTreeUI(paths);
       isDialogOpen = true;
     } catch (err) {
       console.error(err);
-      toast.error('Failed to load preview tree');
+      toast.error('Failed to open selected paths');
     } finally {
       isLoadingPreview = false;
     }
@@ -69,8 +69,8 @@
 
     if (!selected) return;
 
-    isLoadingPreview = true;
     try {
+      isLoadingPreview = true;
       filesTreeNodes = await getPreviewTreeUI(selected);
       isDialogOpen = true;
     } catch (err) {
@@ -126,41 +126,44 @@
       </div>
 
       <div class="flex flex-wrap gap-2">
-        <Button variant="default" onclick={handleOpenFiles} disabled={isLoadingPreview}>
-          {isLoadingPreview ? '…' : 'Upload files'}
+        <Button
+          variant="default"
+          onclick={handleOpenFiles}
+          disabled={isLoadingPreview}
+          class="cursor-pointer"
+        >
+          Upload files
         </Button>
       </div>
     </Card.Header>
     <Card.Content class="py-4">
       <div
         class={{
-          'w-full rounded-2xl border border-dashed p-8 text-center transition-all sm:p-10': true,
-          'border-border border-[1.5px]': !isDragging && !isLoadingPreview,
+          'w-full rounded-2xl border border-dashed  text-center transition-all ': true,
+          'border-border border-[1.5px]': !isDragging,
           'bg-input border-highlight ring-primary/40 ring-2': isDragging,
-          'border-highlight animate-pulse select-none': isLoadingPreview
+          'p-0': isLoadingPreview,
+          'p-10': !isLoadingPreview
         }}
       >
         <div class="">
           {#if isDragging}
             <div class="flex flex-col items-center gap-2">
               <div class="mb-1 text-7xl leading-none">📂</div>
-              <p>Drop files here to parse</p>
             </div>
           {:else if isLoadingPreview}
-            <div class="flex h-20 flex-col items-center justify-center gap-2">
-              <p>Loading preview...</p>
-            </div>
+            <Empty.Root class="w-full">
+              <Empty.Header>
+                <Empty.Media variant="default">
+                  <Spinner size="6" />
+                </Empty.Media>
+                <Empty.Title>Processing files.</Empty.Title>
+                <Empty.Description>Please wait while we process scanning files.</Empty.Description>
+              </Empty.Header>
+            </Empty.Root>
           {:else}
             <div class="flex flex-col items-center gap-2">
               <div class="mb-1 text-7xl leading-none">📁</div>
-
-              {#if parseQueue.hasActiveParsing}
-                <p class="text-muted-foreground text-sm">
-                  {parseQueue.activeParses.length} parse{parseQueue.activeParses.length > 1
-                    ? 's'
-                    : ''} in progress...
-                </p>
-              {/if}
             </div>
           {/if}
         </div>
