@@ -28,7 +28,7 @@
   type ParsedFileDetail = {
     id: string;
     name: string;
-    content: string;
+    // content: string;
     metadata: {
       id: string;
       name: string;

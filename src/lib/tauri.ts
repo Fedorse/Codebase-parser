@@ -110,7 +110,7 @@ export const updateFile = async (content: string, selectedFile: SavedFiles | nul
 };
 
 export const getFileContent = async (file: SavedFiles): Promise<string> => {
-  return await invoke('get_file_content', { dirName: file.name });
+  return await invoke('get_file_content', { dirName: file.id });
 };
 
 export const openDefaultEditor = async (file: string) => {

@@ -3,27 +3,25 @@ import { redirect } from '@sveltejs/kit';
 
 import type { PageLoad } from './$types';
 
-const THIRTY_MB_SIZE = 30 * 1024 * 1024;
+// const THIRTY_MB_SIZE = 30 * 1024 * 1024;
 
-export const load: PageLoad = async ({ params }) => {
+export const load: PageLoad = async ({ params, url }) => {
   const fileId = params.id;
-  console.log(fileId);
-
-  console.time('load');
+  const searchPath = url.searchParams.get('q');
 
   const file = await getFileDetail(fileId);
 
   if (!file) {
     redirect(302, '/');
   }
-  let content = '';
-  if (file.metadata.total_size <= THIRTY_MB_SIZE) {
-    try {
-      content = await getFileContent(file);
-    } catch (err) {
-      console.error('Failed to load file content:', err);
-    }
-  }
+  // let content = '';
+  // if (file.metadata.total_size <= THIRTY_MB_SIZE) {
+  //   try {
+  //     content = await getFileContent(file);
+  //   } catch (err) {
+  //     console.error('Failed to load file content:', err);
+  //   }
+  // }
 
-  return { file, content };
+  return { file, searchPath };
 };

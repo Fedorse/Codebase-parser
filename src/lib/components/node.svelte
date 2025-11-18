@@ -9,8 +9,6 @@
   const isDir = $derived(data?.type === 'dir');
   const isOpen = $derived(Boolean(isDir && data?.open));
   const isHorizontal = $derived(data?.dir === 'LR');
-
-  console.log('data', data);
 </script>
 
 <div
@@ -28,6 +26,7 @@
         'text-primary/20': isDir && !isOpen
       }}
       onclick={() => data?.onToggle?.(data.path)}
+      ondblclick={() => data?.openEditor?.(data.path)}
     >
       {#if !isOpen}
         <Folder class="size-4 shrink-0" />

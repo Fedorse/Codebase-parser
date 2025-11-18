@@ -221,21 +221,36 @@ pub fn update_file(dir_name: String, content: String) -> Result<(), CommandError
 /// **Atomic operation:**
 /// - Renames entire directory
 /// - Updates metadata.name
+// #[tauri::command]
+// pub fn rename_file(dir_name: String, new_name: String) -> Result<(), CommandError> {
+//     let parsed_files_dir = utils::get_app_dir()?.join(PARSED_FILES_DIR);
+//     let old_dir = parsed_files_dir.join(&dir_name);
+//     let new_dir = parsed_files_dir.join(&new_name);
+
+//     // Atomic rename of entire directory
+//     fs::rename(&old_dir, &new_dir)?;
+
+//     // Update metadata to reflect new name
+//     let mut metadata = utils::load_metadata(&new_dir)?;
+//     metadata.name = new_name;
+
+//     // Save using helper function
+//     let metadata_path = utils::get_metadata_path(&new_dir);
+//     utils::save_metadata(&metadata_path, &metadata)?;
+
+//     Ok(())
+// }
+
 #[tauri::command]
 pub fn rename_file(dir_name: String, new_name: String) -> Result<(), CommandError> {
     let parsed_files_dir = utils::get_app_dir()?.join(PARSED_FILES_DIR);
-    let old_dir = parsed_files_dir.join(&dir_name);
-    let new_dir = parsed_files_dir.join(&new_name);
+    let dir = parsed_files_dir.join(&dir_name);
 
-    // Atomic rename of entire directory
-    fs::rename(&old_dir, &new_dir)?;
+    // Никакого fs::rename — папка остаётся с тем же именем (timestamp / id)
+    let mut metadata = utils::load_metadata(&dir)?;
+    metadata.name = new_name.clone();
 
-    // Update metadata to reflect new name
-    let mut metadata = utils::load_metadata(&new_dir)?;
-    metadata.name = new_name;
-
-    // Save using helper function
-    let metadata_path = utils::get_metadata_path(&new_dir);
+    let metadata_path = utils::get_metadata_path(&dir);
     utils::save_metadata(&metadata_path, &metadata)?;
 
     Ok(())

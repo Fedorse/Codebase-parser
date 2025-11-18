@@ -29,10 +29,8 @@
 
 <div class="flex w-full flex-col px-10">
   <div class="mb-6">
-    <h1 in:scrambleText|global class="text-xl font-semibold">Saved Files</h1>
-    <p in:scrambleText|global class="text-muted-foreground">
-      Manage your saved files and documents
-    </p>
+    <h1 class="text-xl font-semibold">Saved Files</h1>
+    <p class="text-muted-foreground">Manage your saved files and documents</p>
   </div>
 
   {#await data.files}
@@ -47,10 +45,8 @@
     {#if files?.length === 0}
       <div class="flex h-full w-full flex-col items-center justify-center">
         <Files class=" text-muted-foreground mb-4 size-12" />
-        <h3 in:scrambleText|global class="mb-2 text-lg font-medium">No files found</h3>
-        <p in:scrambleText|global class="text-muted-foreground text-sm">
-          You saved files will appear when you parse them
-        </p>
+        <h3 class="mb-2 text-lg font-medium">No files found</h3>
+        <p class="text-muted-foreground text-sm">You saved files will appear when you parse them</p>
       </div>
     {:else}
       <div

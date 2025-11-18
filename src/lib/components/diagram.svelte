@@ -22,13 +22,15 @@
 
   import type { FileNode, GraphData } from '@/lib/utils/utils';
   import { ArrowLeftRight, ArrowUpDown, Fullscreen } from '@lucide/svelte';
+  import { goto } from '$app/navigation';
   type Direction = 'TB' | 'LR';
   type WithMeasured<T> = T & { measured?: { width?: number; height?: number } };
 
   const WIDTH_NODE = 160;
   const HEIGHT_NODE = 46;
 
-  const { tree = [] } = $props<{ tree?: FileNode[] }>();
+  const { tree = [], fileId } = $props<{ tree?: FileNode[] }>();
+  console.log('fileId', fileId);
 
   const { fitView } = useSvelteFlow();
 
@@ -62,6 +64,10 @@
     rebuildAndLayout();
   };
 
+  const openInEditor = (path: string) => {
+    goto(`/files/${fileId}/edit?q=${encodeURIComponent(path)}`);
+  };
+
   const buildNode = (file: FileNode): Node<GraphData> => ({
     id: file.path,
     type: 'fileNode',
@@ -71,7 +77,8 @@
       path: file.path,
       onToggle: file.type === 'Directory' ? toggleDir : undefined,
       open: file.type === 'Directory' ? expandedDirs.has(file.path) : undefined,
-      dir: direction
+      dir: direction,
+      openEditor: openInEditor
     },
     position: { x: 0, y: 0 }
   });

@@ -7,7 +7,8 @@
     renameFile,
     openDefaultEditor,
     openFileInfolder,
-    type SavedFiles
+    type SavedFiles,
+    getFileContent
   } from '$lib/tauri';
   import { page } from '$app/state';
   import { formatFileSize } from '@/lib/utils/utils';
@@ -19,39 +20,22 @@
   import * as Kbd from '$lib/components/ui/kbd/index.js';
   import ConfirmDialog from '$lib/components/confirm-dialog.svelte';
   import { Route, Code, Copy, FolderOpen } from '@lucide/svelte/icons';
+  import { Spinner } from '$lib/components/ui/spinner/index.js';
 
   import type { PageProps } from './$types';
 
-  type ParsedFileDetail = {
-    id: string;
-    name: string;
-    content: string;
-    metadata: {
-      id: string;
-      name: string;
-      created_at: string;
-      files_count: number;
-      total_size: number;
-      files: FileMetadata[];
-      file_tree: ParsedPath[];
-    };
-  };
-
   let { data }: PageProps = $props();
-
-  $effect(() => {
-    console.log(data);
-  });
 
   const THIRTY_MB_SIZE = 30 * 1024 * 1024;
 
   let isOpen = $state(true);
-  let value = $state<string>(data.content);
-  let snapshot = $state<string>(data.content);
+  let value = $state<string>('');
+  let snapshot = $state<string>('');
   let isCopied = $state(false);
-  let rename = $state<string>(data.file.name);
+  let rename = $state<string>(data.file.metadata.name);
   let inputEl = $state<HTMLInputElement | null>(null);
   let confirmOpen = $state(false);
+  let isLoading = $state(false);
 
   const isTainted = $derived(value !== snapshot);
   const isLargeFile = $derived(data.file.metadata.total_size > THIRTY_MB_SIZE);
@@ -96,7 +80,7 @@
     } else if (e.key === 'Escape') {
       e.preventDefault();
       e.stopPropagation();
-      rename = data.file.name;
+      rename = data.file.metadata.name;
       inputEl?.blur();
     }
   };
@@ -105,9 +89,6 @@
     if (rename === data.file.name) return;
     try {
       await renameFile(data.file, rename.trim());
-
-      await goto(`/files/${encodeURIComponent(rename)}/edit`, { replaceState: true });
-
       await invalidate('app:files');
 
       toast.success('Renamed file');
@@ -143,6 +124,24 @@
       toast.error('Copy failed');
     }
   };
+
+  $effect(async () => {
+    if (isLargeFile) {
+      isLoading = false;
+      return;
+    }
+    isLoading = true;
+    try {
+      const content = await getFileContent(data.file);
+      value = content;
+      snapshot = content;
+    } catch (err) {
+      console.error('Failed to load file content:', err);
+      toast.error('Failed to load file content');
+    } finally {
+      isLoading = false;
+    }
+  });
 
   $effect(() => {
     const state = page.state as { focus?: string };
@@ -206,34 +205,16 @@
 
       <div class="min-h-0 flex-1 overflow-hidden rounded-md border">
         {#if isLargeFile}
-          <div class="flex h-full w-full items-center justify-center">
-            <div class="flex max-w-xs items-center gap-6">
-              <div class="flex flex-col gap-4">
-                <div class="space-y-2">
-                  <div class="flex items-center gap-2">
-                    <h3 class="text-xl font-semibold">File Too Large to Edit</h3>
-                    <Badge variant="outline">
-                      Size {formatFileSize(data.file.total_size)}
-                    </Badge>
-                  </div>
-                  <p class="text-muted-foreground text-sm">
-                    This file exceeds the 30 MB limit for in-app editing. You can open it in your
-                    system's default editor.
-                  </p>
-                </div>
-
-                <div class="flex gap-4">
-                  <Button onclick={() => openEditor(data.file)}>Open in default Editor</Button>
-                  <Button variant="outline" onclick={() => handleOpenDir(data.file)}>
-                    <FolderOpen class="size-4" />
-                    Show in folder
-                  </Button>
-                </div>
-              </div>
+          {@render largFileContent()}
+        {:else if isLoading}
+          <div class=" flex h-full w-full items-center justify-center">
+            <div class="flex items-center gap-2">
+              <Spinner size="6" />
+              <span class="text-muted-foreground text-sm">Loading file content...</span>
             </div>
           </div>
         {:else}
-          <MonacoEditor bind:value />
+          <MonacoEditor bind:value search={data.searchPath} />
         {/if}
       </div>
     </div></Dialog.Content
@@ -272,5 +253,34 @@
         <Kbd.Root class="text-muted-foreground">⌘ + S</Kbd.Root>
       {/if}
     </Button>
+  </div>
+{/snippet}
+
+{#snippet largFileContent()}
+  <div class="flex h-full w-full items-center justify-center">
+    <div class="flex max-w-xs items-center gap-6">
+      <div class="flex flex-col gap-4">
+        <div class="space-y-2">
+          <div class="flex items-center gap-2">
+            <h3 class="text-xl font-semibold">File Too Large to Edit</h3>
+            <Badge variant="outline">
+              Size {formatFileSize(data.file.total_size)}
+            </Badge>
+          </div>
+          <p class="text-muted-foreground text-sm">
+            This file exceeds the 30 MB limit for in-app editing. You can open it in your system's
+            default editor.
+          </p>
+        </div>
+
+        <div class="flex gap-4">
+          <Button onclick={() => openEditor(data.file)}>Open in default Editor</Button>
+          <Button variant="outline" onclick={() => handleOpenDir(data.file)}>
+            <FolderOpen class="size-4" />
+            Show in folder
+          </Button>
+        </div>
+      </div>
+    </div>
   </div>
 {/snippet}

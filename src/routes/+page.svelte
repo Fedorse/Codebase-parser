@@ -121,13 +121,11 @@
     <Card.Header class="flex justify-between">
       <div class="flex flex-col gap-2">
         <Card.Title>
-          <p in:scrambleText|global>Quick Start</p>
+          <p>Quick Start</p>
         </Card.Title>
 
         <Card.Description>
-          <p in:scrambleText|global>
-            Drag & drop or choose a source. All files are pre-selected by default.
-          </p>
+          <p>Drag & drop or choose a source. All files are pre-selected by default.</p>
         </Card.Description>
       </div>
 
