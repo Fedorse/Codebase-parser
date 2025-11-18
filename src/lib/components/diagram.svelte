@@ -20,7 +20,7 @@
   import CustomNode from '$lib/components/node.svelte';
   import { getCurrentWindow } from '@tauri-apps/api/window';
 
-  import type { FileNode, GraphData } from '$lib/utils';
+  import type { FileNode, GraphData } from '@/lib/utils/utils';
   import { ArrowLeftRight, ArrowUpDown, Fullscreen } from '@lucide/svelte';
   type Direction = 'TB' | 'LR';
   type WithMeasured<T> = T & { measured?: { width?: number; height?: number } };

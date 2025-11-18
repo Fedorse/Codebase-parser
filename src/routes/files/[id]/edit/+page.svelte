@@ -10,7 +10,7 @@
     type SavedFiles
   } from '$lib/tauri';
   import { page } from '$app/state';
-  import { formatFileSize } from '@/lib/utils';
+  import { formatFileSize } from '@/lib/utils/utils';
   import { Button } from '$lib/components/ui/button';
   import { Input } from '$lib/components/ui/input';
   import * as Dialog from '$lib/components/ui/dialog';
@@ -38,6 +38,10 @@
   };
 
   let { data }: PageProps = $props();
+
+  $effect(() => {
+    console.log(data);
+  });
 
   const THIRTY_MB_SIZE = 30 * 1024 * 1024;
 
@@ -101,6 +105,9 @@
     if (rename === data.file.name) return;
     try {
       await renameFile(data.file, rename.trim());
+
+      await goto(`/files/${encodeURIComponent(rename)}/edit`, { replaceState: true });
+
       await invalidate('app:files');
 
       toast.success('Renamed file');
@@ -178,11 +185,7 @@
       <div class="mb-2 flex items-center justify-between">
         <div class="flex items-center gap-5 pt-3">
           <Route class="text-muted-foreground size-4 " />
-          <Badge
-            variant="secondary"
-            class="max-w-lg truncate font-mono text-xs"
-            title={data.file?.directory_path}
-          >
+          <Badge variant="secondary" class="max-w-lg truncate font-mono text-xs">
             {data.file?.directory_path}
           </Badge>
           {#if isLargeFile}
@@ -190,8 +193,7 @@
           {/if}
           {#if isTainted}
             <div class="flex items-center gap-1">
-              <span class="bg-warn h-1.5 w-1.5 animate-pulse rounded-full text-xs transition-all"
-              ></span>
+              <span class="bg-warn h-1.5 w-1.5 animate-pulse rounded-full text-xs transition-all" />
               <span class="text-muted-foreground text-xs">Edited</span>
             </div>
           {/if}

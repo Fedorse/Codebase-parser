@@ -1,6 +1,6 @@
 <script lang="ts">
   import { openFileInfolder } from '$lib/tauri';
-  import { formatFileSize, formatDate } from '$lib/utils';
+  import { formatFileSize, formatDate } from '@/lib/utils/utils';
   import { goto } from '$app/navigation';
 
   import {

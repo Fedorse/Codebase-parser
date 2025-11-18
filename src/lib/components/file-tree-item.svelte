@@ -3,11 +3,11 @@
   import { Label } from '$lib/components/ui/label';
   import * as Collapsible from '$lib/components/ui/collapsible';
   import Self from '$lib/components/file-tree-item.svelte';
-  import { setSelected } from '$lib/utils';
+  import { setSelected } from '@/lib/utils/utils';
   import type { FileTreeNode } from '$lib/tauri.ts';
 
   import { FileIcon, FolderIcon, ChevronRight, FolderOpen } from '@lucide/svelte/icons';
-  import { formatFileSize } from '$lib/utils';
+  import { formatFileSize } from '@/lib/utils/utils';
 
   let { node, isRoot = false } = $props();
 

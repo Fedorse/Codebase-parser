@@ -4,13 +4,11 @@
   import CardSkeleton from '@/lib/components/card-file-skeleton.svelte';
   import { toast } from 'svelte-sonner';
   import { deleteFile } from '@/lib/tauri.js';
-  import { getLoadingContext } from '@/lib/state-utils/store-loading.svelte.js';
-  import { onMount } from 'svelte';
+  import { scrambleText } from '@/lib/utils/scramble-transition';
 
   let { data, children } = $props();
 
   let localFiles = $state([]);
-  let loading = getLoadingContext();
 
   const handleDelete = async (file: File) => {
     try {
@@ -24,12 +22,6 @@
     }
   };
 
-  // onMount(async () => {
-  //   await loading.withProgress(async () => {
-  //     localFiles = await data.files;
-  //   });
-  // });
-
   $effect(() => {
     data.files.then((files) => (localFiles = files));
   });
@@ -37,8 +29,10 @@
 
 <div class="flex w-full flex-col px-10">
   <div class="mb-6">
-    <h1 class="text-xl font-semibold">Saved Files</h1>
-    <p class="text-muted-foreground">Manage your saved files and documents</p>
+    <h1 in:scrambleText|global class="text-xl font-semibold">Saved Files</h1>
+    <p in:scrambleText|global class="text-muted-foreground">
+      Manage your saved files and documents
+    </p>
   </div>
 
   {#await data.files}
@@ -53,8 +47,10 @@
     {#if files?.length === 0}
       <div class="flex h-full w-full flex-col items-center justify-center">
         <Files class=" text-muted-foreground mb-4 size-12" />
-        <h3 class="mb-2 text-lg font-medium">No files found</h3>
-        <p class="text-muted-foreground">You saved files will appear when you parse them</p>
+        <h3 in:scrambleText|global class="mb-2 text-lg font-medium">No files found</h3>
+        <p in:scrambleText|global class="text-muted-foreground text-sm">
+          You saved files will appear when you parse them
+        </p>
       </div>
     {:else}
       <div

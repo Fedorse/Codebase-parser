@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { formatFileSize } from '$lib/utils';
+  import { formatFileSize } from '@/lib/utils/utils';
   import * as Collapsible from '$lib/components/ui/collapsible';
   import { ChevronRight } from '@lucide/svelte';
   import FileText from '@lucide/svelte/icons/file-text';

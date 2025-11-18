@@ -7,11 +7,11 @@ const THIRTY_MB_SIZE = 30 * 1024 * 1024;
 
 export const load: PageLoad = async ({ params }) => {
   const fileId = params.id;
+  console.log(fileId);
 
   console.time('load');
 
   const file = await getFileDetail(fileId);
-  console.timeEnd('load');
 
   if (!file) {
     redirect(302, '/');

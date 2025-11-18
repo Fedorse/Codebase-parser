@@ -11,6 +11,7 @@
   import ParseQueue from '$lib/components/card-queue.svelte';
   import * as Empty from '$lib/components/ui/empty/index.js';
   import { Spinner } from '$lib/components/ui/spinner/index.js';
+  import { scrambleText } from '$lib/utils/scramble-transition';
 
   import type { FileTree } from '$lib/type';
 
@@ -119,9 +120,14 @@
   <Card.Root class="bg-card/20 w-full max-w-5xl justify-between pt-6 pb-4">
     <Card.Header class="flex justify-between">
       <div class="flex flex-col gap-2">
-        <Card.Title>Quick Start</Card.Title>
+        <Card.Title>
+          <p in:scrambleText|global>Quick Start</p>
+        </Card.Title>
+
         <Card.Description>
-          Drag & drop or choose a source. All files are pre-selected by default.
+          <p in:scrambleText|global>
+            Drag & drop or choose a source. All files are pre-selected by default.
+          </p>
         </Card.Description>
       </div>
 
@@ -152,15 +158,7 @@
               <div class="mb-1 text-7xl leading-none">📂</div>
             </div>
           {:else if isLoadingPreview}
-            <Empty.Root class="w-full">
-              <Empty.Header>
-                <Empty.Media variant="default">
-                  <Spinner size="6" />
-                </Empty.Media>
-                <Empty.Title>Processing files.</Empty.Title>
-                <Empty.Description>Please wait while we process scanning files.</Empty.Description>
-              </Empty.Header>
-            </Empty.Root>
+            {@render loadingTree()}
           {:else}
             <div class="flex flex-col items-center gap-2">
               <div class="mb-1 text-7xl leading-none">📁</div>
@@ -184,3 +182,15 @@
     />
   {/if}
 </main>
+
+{#snippet loadingTree()}
+  <Empty.Root class="w-full">
+    <Empty.Header>
+      <Empty.Media variant="default">
+        <Spinner size="6" />
+      </Empty.Media>
+      <Empty.Title>Processing files.</Empty.Title>
+      <Empty.Description>Please wait while we process scanning files.</Empty.Description>
+    </Empty.Header>
+  </Empty.Root>
+{/snippet}
