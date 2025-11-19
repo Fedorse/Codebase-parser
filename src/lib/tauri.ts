@@ -33,28 +33,6 @@ type ParsedFileListItem = {
 };
 export type SavedFiles = { name: string; path: string; preview: string; size: number; id: number };
 
-export const annotateAggregates = (
-  nodes: FileTree[]
-): { totalSize: number; filesCount: number } => {
-  let totalSize = 0;
-  let filesCount = 0;
-
-  for (const n of nodes) {
-    if (n.type === 'File') {
-      const s = n.size ?? 0;
-      totalSize += s;
-      filesCount += 1;
-    } else {
-      const { totalSize: t, filesCount: c } = annotateAggregates(n.children ?? []);
-      n.totalSize = t;
-      n.filesCount = c;
-      totalSize += t;
-      filesCount += c;
-    }
-  }
-  return { totalSize, filesCount };
-};
-
 export const ensureChildrenArrays = (nodes: FileTreeNode[]): FileTreeNode[] => {
   for (const n of nodes) {
     if (!n.children) n.children = [];
@@ -71,15 +49,34 @@ export const setSelectedRecursive = (nodes: FileTreeNode[], value = true): FileT
   return nodes;
 };
 
+// export const collectSelectedPath = (nodes: FileTreeNode[]): string[] => {
+//   const paths: string[] = [];
+//   for (const n of nodes) {
+//     if (n.type === 'File') {
+//       if (n.selected) paths.push(n.path);
+//     } else if (n.children?.length) {
+//       paths.push(...collectSelectedPath(n.children));
+//     }
+//   }
+//   return paths;
+// };
+
 export const collectSelectedPath = (nodes: FileTreeNode[]): string[] => {
   const paths: string[] = [];
+
   for (const n of nodes) {
-    if (n.type === 'File') {
-      if (n.selected) paths.push(n.path);
-    } else if (n.children?.length) {
+    // ✅ FIX: Check selected for BOTH files and directories
+    if (n.selected) {
+      paths.push(n.path);
+      continue; // Don't recurse into children if parent is selected
+    }
+
+    // Only recurse if directory is NOT selected
+    if (n.type === 'Directory' && n.children?.length) {
       paths.push(...collectSelectedPath(n.children));
     }
   }
+
   return paths;
 };
 
@@ -92,12 +89,11 @@ export const getPreviewTreeUI = async (paths: string[]): Promise<FileTreeNode[]>
   const tree = await getPreviewTree(paths);
   // ensureChildrenArrays(tree);
   setSelectedRecursive(tree, true);
-  annotateAggregates(tree);
   return tree;
 };
 
-export const getSavedFiles = async (): Promise<ParsedFileListItem[]> => {
-  const files = await invoke<ParsedFileListItem[]>('get_files');
+export const getSavedFiles = async (limit?: number): Promise<ParsedFileListItem[]> => {
+  const files = await invoke<ParsedFileListItem[]>('get_files', { limit });
   return files;
 };
 
@@ -139,9 +135,9 @@ export const renameFile = async (file: SavedFiles, newName: string) => {
   await invoke('rename_file', { dirName: file.id, newName: newName });
 };
 
-export const getFileDetail = async (file) => {
+export const getFileDetail = async (fileId) => {
   const detail = await invoke('get_file_detail', {
-    dirName: file.id
+    dirName: fileId
   });
   return detail;
 };

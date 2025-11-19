@@ -1,8 +1,8 @@
 <script lang="ts">
   import { Handle, Position } from '@xyflow/svelte';
-  import { Folder, File, ChevronRight } from '@lucide/svelte';
+  import { Folder, File, ChevronRight, FolderOpen } from '@lucide/svelte';
   import * as Tooltip from '$lib/components/ui/tooltip/index.js';
-  import type { GraphData } from '$lib/utils';
+  import type { GraphData } from '@/lib/utils/utils';
 
   let { data }: GraphData = $props();
 
@@ -26,9 +26,12 @@
         'text-primary/20': isDir && !isOpen
       }}
       onclick={() => data?.onToggle?.(data.path)}
+      ondblclick={() => data?.openEditor?.(data.path)}
     >
-      {#if isDir}
+      {#if !isOpen}
         <Folder class="size-4 shrink-0" />
+      {:else if isOpen}
+        <FolderOpen class="size-4 shrink-0" />
       {:else}
         <File class="size-4 shrink-0" />
       {/if}

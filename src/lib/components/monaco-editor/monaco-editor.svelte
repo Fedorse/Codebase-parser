@@ -4,7 +4,7 @@
   import { setupThemes } from './utils';
   import { mode } from 'mode-watcher';
 
-  let { value = $bindable(''), className = '' } = $props();
+  let { value = $bindable(''), className = '', search = '' } = $props();
 
   let editor: Monaco.editor.IStandaloneCodeEditor | null = $state(null);
   let editorContainer: HTMLElement | null = $state(null);
@@ -96,9 +96,46 @@
       }
     });
 
+    editor.addAction({
+      id: 'open-command-palette-with-cmd-k',
+      label: 'Command Palette',
+      keybindings: [monaco.KeyMod.CtrlCmd | monaco.KeyCode.KeyK],
+      contextMenuGroupId: 'navigation',
+      contextMenuOrder: 0,
+      run: (ed) => {
+        ed.getAction('editor.action.quickCommand')?.run();
+      }
+    });
+
     editor.onDidChangeModelContent(() => {
       value = editor!.getValue();
     });
+  });
+
+  $effect(() => {
+    if (!editor) return;
+
+    const q = search;
+    if (!q) return;
+    const header = `===== ${search} =====`;
+
+    const model = editor.getModel();
+    if (!model) return;
+
+    const match = model.findNextMatch(
+      header,
+      { lineNumber: 1, column: 1 },
+      /* isRegex */ false,
+      /* matchCase */ false,
+      /* wordSeparators */ null,
+      /* captureMatches */ false
+    );
+
+    if (!match) return;
+
+    editor.revealRangeInCenter(match.range);
+    editor.setSelection(match.range);
+    editor.focus();
   });
 
   $effect(() => {

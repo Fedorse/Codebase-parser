@@ -6,5 +6,5 @@
 </script>
 
 <SvelteFlowProvider>
-  <Diagram roots={data.roots} />
+  <Diagram tree={data.tree} fileId={data.metadata.id} />
 </SvelteFlowProvider>

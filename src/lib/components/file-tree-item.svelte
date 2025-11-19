@@ -3,9 +3,11 @@
   import { Label } from '$lib/components/ui/label';
   import * as Collapsible from '$lib/components/ui/collapsible';
   import Self from '$lib/components/file-tree-item.svelte';
+  import { setSelected } from '@/lib/utils/utils';
+  import type { FileTreeNode } from '$lib/tauri.ts';
 
-  import { FileIcon, FolderIcon, ChevronRight } from '@lucide/svelte/icons';
-  import { formatFileSize, setSelected } from '$lib/utils';
+  import { FileIcon, FolderIcon, ChevronRight, FolderOpen } from '@lucide/svelte/icons';
+  import { formatFileSize } from '@/lib/utils/utils';
 
   let { node, isRoot = false } = $props();
   $effect(() => {
@@ -34,52 +36,56 @@
 </script>
 
 {#if node.type === 'File'}
-  <li class="flex items-center gap-2 pt-1">
+  <li class=" hover:bg-muted/50 flex items-center gap-2 pt-1 transition-all">
     <Checkbox bind:checked={node.selected} onCheckedChange={onToggle} />
     <div
       class={{
-        'flex items-center gap-2': true,
+        'flex w-full items-center gap-2': true,
         'text-primary ': node.selected,
         'text-primary/20': !node.selected
       }}
     >
-      <FileIcon class="size-5" />
-      <span>{node.name}</span>
-      <span>{formatFileSize(node.size)}</span>
+      <FileIcon class="size-4.5 cursor-pointer stroke-1" />
+      {formatFileSize(node.size)}
     </div>
   </li>
 {:else}
   <Collapsible.Root class="flex flex-col" bind:open={isOpen}>
     <Collapsible.Trigger>
-      <li class="flex flex-row items-center gap-2">
-        <ChevronRight
-          class={{
-            'size-4 transition-transform duration-200': true,
-            'rotate-90': isOpen
-          }}
-        />
-        <Checkbox
-          checked={checkboxState.isChecked}
-          onCheckedChange={onToggle}
-          indeterminate={checkboxState.isIndeterminate}
-          onclick={(e) => e.stopPropagation()}
-        />
-        <div
-          class={{
-            'flex items-center gap-2': true,
-            'text-primary ': node.selected,
-            'text-primary/20': !node.selected
-          }}
-        >
-          <FolderIcon class="size-6" />
-          <Label class="flex-1 cursor-pointer select-none">
-            {node.name}
-          </Label>
-          <span class="ml-2 text-xs opacity-70">
-            ({node.filesCount ?? 0} files • {formatFileSize(node.totalSize ?? 0)})
+      <ChevronRight
+        class={{
+          'size-4 cursor-pointer transition-transform duration-200': true,
+          'rotate-90': isOpen
+        }}
+      />
+      <Checkbox
+        checked={checkboxState.isChecked}
+        onCheckedChange={onToggle}
+        indeterminate={checkboxState.isIndeterminate}
+        onclick={(e) => e.stopPropagation()}
+      />
+      <div
+        class={{
+          'flex w-full items-center gap-2': true,
+          'text-primary': node.selected,
+          'text-primary/20': !node.selected
+        }}
+      >
+        {#if isOpen}
+          <FolderOpen class="size-5 cursor-pointer stroke-1" />
+        {:else}
+          <FolderIcon class="size-5 cursor-pointer stroke-1" />
+        {/if}
+
+        <Label class="flex-1 cursor-pointer select-none">
+          {node.name}
+        </Label>
+        {#if node.size}
+          <span class="ml-2 pr-4 text-xs opacity-70">
+            {formatFileSize(node.size)}
           </span>
-        </div>
-      </li>
+        {/if}
+      </div>
     </Collapsible.Trigger>
     <Collapsible.Content>
       {#if isOpen && node.children?.length}

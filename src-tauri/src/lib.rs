@@ -1,7 +1,6 @@
 // Learn more about Tauri commands at https://tauri.app/develop/calling-rust/
 pub mod utils;
 pub mod commands;
-pub mod consts;
 pub mod error;
 
 use tauri_plugin_log;
@@ -20,11 +19,13 @@ pub fn run() {
             commands::get_preview_tree,
             commands::parse,
             commands::get_files,
+            commands::get_file_detail,
             commands::get_file_content,
+            commands::get_file_metadata,
             commands::update_file,
-            commands::open_in_default_editor,
-            commands::delete_file,
             commands::rename_file,
+            commands::delete_file,
+            commands::open_in_default_editor,
             commands::open_in_folder,
         ])
         .run(tauri::generate_context!())

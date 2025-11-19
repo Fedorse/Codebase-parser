@@ -1,13 +1,14 @@
 <script lang="ts">
-  import { formatFileSize } from '$lib/utils';
+  import { formatFileSize } from '@/lib/utils/utils';
   import * as Collapsible from '$lib/components/ui/collapsible';
   import { ChevronRight } from '@lucide/svelte';
   import FileText from '@lucide/svelte/icons/file-text';
   import Button from '$lib/components/ui/button/button.svelte';
+  import { Skeleton } from '$lib/components/ui/skeleton';
+  import { pushState } from '$app/navigation';
 
   type Props = {
-    limit?: number;
-    files: ParsedFileListItem[];
+    files: Promise<ParsedFileListItem[]>;
   };
 
   type ParsedFileListItem = {
@@ -21,14 +22,15 @@
     last_modified: string;
   };
 
-  let { limit = 3, files = [] }: Props = $props();
+  let { files }: Props = $props();
 
   let open = $state(true);
-  let loading = $state(false);
-
-  const recent = $derived(files.slice(0, limit));
 
   const toggle = () => (open = !open);
+
+  const openEdit = (file: File) => {
+    pushState('', { editFile: { id: file.id } });
+  };
 </script>
 
 <Collapsible.Root bind:open class="w-full ">
@@ -45,28 +47,50 @@
 
   <Collapsible.Content>
     <div class="pt-3">
-      {#if loading}
-        <div class="bg-muted/40 h-16 w-full animate-pulse rounded-md" />
-      {:else if recent.length}
-        <ul class="divide-border border-border/70 divide-y rounded-md border">
-          {#each recent as f}
-            <li>
-              <a href="/files" class="hover:bg-muted/40 flex items-center gap-3 px-3 py-2">
-                <FileText class="text-muted-foreground size-4" />
-                <div class="min-w-0 flex-1">
-                  <div class="truncate text-sm font-medium">{f.name}</div>
-                  <div class="text-muted-foreground truncate text-xs">{f.directory_path}</div>
-                </div>
-                <div class="text-muted-foreground text-xs">{formatFileSize(f.total_size)}</div>
-              </a>
-            </li>
+      {#await files}
+        <div class="divide-border border-border/70 divide-y rounded-md border">
+          {#each Array(3) as _}
+            <div class="flex items-center gap-3 px-3 py-2">
+              <Skeleton class="h-6 w-6 rounded" />
+              <div class="min-w-0 flex-1 space-y-2">
+                <Skeleton class="h-4 w-2/4" />
+                <Skeleton class="h-3 w-3/4" />
+              </div>
+              <Skeleton class="h-3 w-12" />
+            </div>
           {/each}
-        </ul>
-      {:else}
-        <div class="text-muted-foreground rounded-md border border-dashed p-4 text-center text-xs">
-          No saved files
         </div>
-      {/if}
-    </div>
-  </Collapsible.Content>
+      {:then resolvedFiles}
+        <ul class="divide-border border-border/70 divide-y rounded-md border">
+          {#if resolvedFiles.length > 0}
+            {#each resolvedFiles as f}
+              <li>
+                <div
+                  class="hover:bg-muted/40 flex cursor-pointer items-center gap-3 px-3 py-2"
+                  onclick={() => openEdit(f)}
+                >
+                  <FileText class="text-muted-foreground size-5 stroke-1" />
+                  <div class="min-w-0 flex-1">
+                    <div class="truncate text-sm font-medium">{f.name}</div>
+                    <div class="text-muted-foreground truncate text-xs">{f.directory_path}</div>
+                  </div>
+                  <div class="text-muted-foreground text-xs">{formatFileSize(f.total_size)}</div>
+                </div>
+              </li>
+            {/each}
+          {:else}
+            <div class="text-muted-foreground divide-border rounded-md p-4 text-center text-xs">
+              No saved files
+            </div>
+          {/if}
+        </ul>
+      {:catch error}
+        <div
+          class="rounded-md border border-red-200 bg-red-50 p-4 text-center text-xs text-red-600"
+        >
+          Failed to load files
+        </div>
+      {/await}
+    </div></Collapsible.Content
+  >
 </Collapsible.Root>

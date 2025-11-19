@@ -20,15 +20,16 @@
   import CustomNode from '$lib/components/node.svelte';
   import { getCurrentWindow } from '@tauri-apps/api/window';
 
-  import type { FileNode, GraphData } from '$lib/utils';
+  import type { FileNode, GraphData } from '@/lib/utils/utils';
   import { ArrowLeftRight, ArrowUpDown, Fullscreen } from '@lucide/svelte';
+  import { goto, pushState } from '$app/navigation';
   type Direction = 'TB' | 'LR';
   type WithMeasured<T> = T & { measured?: { width?: number; height?: number } };
 
   const WIDTH_NODE = 160;
   const HEIGHT_NODE = 46;
 
-  const { roots = [] } = $props<{ roots?: FileNode[] }>();
+  const { tree = [], fileId } = $props<{ tree?: FileNode[] }>();
 
   const { fitView } = useSvelteFlow();
 
@@ -53,13 +54,17 @@
     }
   };
 
-  for (const r of roots) if (r.type === 'Directory') expandedDirs.add(r.path);
+  for (const r of tree) if (r.type === 'Directory') expandedDirs.add(r.path);
 
   const toggleDir = (path: string) => {
     const next = expandedDirs;
     next.has(path) ? next.delete(path) : next.add(path);
     expandedDirs = next;
     rebuildAndLayout();
+  };
+
+  const openInEditor = (path: string) => {
+    pushState('', { editFile: { id: fileId, searchPath: path } });
   };
 
   const buildNode = (file: FileNode): Node<GraphData> => ({
@@ -71,7 +76,8 @@
       path: file.path,
       onToggle: file.type === 'Directory' ? toggleDir : undefined,
       open: file.type === 'Directory' ? expandedDirs.has(file.path) : undefined,
-      dir: direction
+      dir: direction,
+      openEditor: openInEditor
     },
     position: { x: 0, y: 0 }
   });
@@ -142,7 +148,7 @@
   };
 
   const rebuildAndLayout = () => {
-    const { outNodes, outEdges } = collectVisible(roots);
+    const { outNodes, outEdges } = collectVisible(tree);
     const { nodes: n, edges: e } = getLayoutedElements(outNodes, outEdges, { direction });
     nodes = n;
     edges = e;

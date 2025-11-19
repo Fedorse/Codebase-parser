@@ -20,6 +20,7 @@ export type GraphData = {
   onToggle?: (p: string) => void;
   open?: boolean;
   dir: 'TB' | 'LR';
+  openEditor?: (path: string) => void;
 };
 export type FileNode = {
   name: string;
