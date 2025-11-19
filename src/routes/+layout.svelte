@@ -5,9 +5,15 @@
   import * as Tooltip from '$lib/components/ui/tooltip/index.js';
   import { Toaster } from '$lib/components/ui/sonner/index.js';
   import { setLoadingContext } from '@/lib/state-utils/store-loading.svelte';
+  import { page } from '$app/state';
+  import FileDialogEdit from '@/lib/components/file-dialog-edit.svelte';
 
   let { children } = $props();
-let loading = setLoadingContext();
+  const editFile = $derived(page.state.editFile);
+
+  const handleCloseEditor = () => {
+    history.back();
+  };
 </script>
 
 <!-- {#if loading.inProgress}
@@ -26,7 +32,7 @@ let loading = setLoadingContext();
   </div>
 {/if} -->
 
-<Tooltip.Provider delayDuration={100}>
+<Tooltip.Provider delayDuration={1000}>
   <Toaster richColors={true} position="bottom-right" />
   <div class="flex h-screen flex-col">
     <NavBar />
@@ -34,5 +40,12 @@ let loading = setLoadingContext();
       <ModeWatcher />
       {@render children?.()}
     </main>
+    {#if editFile}
+      <FileDialogEdit
+        fileId={editFile.id}
+        searchPath={editFile.searchPath}
+        onClose={() => handleCloseEditor()}
+      />
+    {/if}
   </div>
 </Tooltip.Provider>

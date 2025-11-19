@@ -21,6 +21,8 @@
 
   import ConfirmDialog from '$lib/components/confirm-dialog.svelte';
   import * as DropdownMenu from '$lib/components/ui/dropdown-menu/index.js';
+  import { page } from '$app/state';
+  import { pushState } from '$app/navigation';
 
   import type { SavedFiles } from '$lib/tauri';
 
@@ -37,10 +39,10 @@
   let isLargeFile = $derived(file.file_size > THIRTY_MB_SIZE);
 
   const menuItems = [
-    { label: 'Edit', action: () => gotoEdit(file), icon: Code },
+    { label: 'Edit', action: () => openEditor(file), icon: Code },
     { label: 'View graph', action: () => gotoGraph(file), icon: Network },
     { label: 'Open folder', action: () => handleOpenDir(file), icon: FolderOpenDot },
-    { label: 'Rename file', action: () => gotoEditRename(file), icon: Pencil, separator: true },
+    { label: 'Rename file', action: () => editFileName(file), icon: Pencil, separator: true },
     {
       label: 'Delete',
       action: () => handleDelete(file),
@@ -59,11 +61,9 @@
   };
 
   const gotoGraph = (file: { id: string }) => goto(`/graph/${file.id}`);
-  const gotoEdit = (file: File) => goto(`/files/${file.id}/edit`);
-  const gotoEditRename = (file: File) =>
-    goto(`/files/${file.id}/edit`, {
-      state: { focus: 'rename' }
-    });
+  const openEditor = (file: File) => pushState('', { editFile: { id: file.id } });
+  const editFileName = (file: File) =>
+    pushState('', { editFile: { id: file.id }, focus: 'rename' });
 </script>
 
 <Card.Root class="bg-card/20 max-w-96  gap-2 pb-2 ">
@@ -114,7 +114,7 @@
 {#snippet controls()}
   <Tooltip.Root>
     <Tooltip.Trigger>
-      <Button variant="ghost" onclick={() => gotoEdit(file)}>
+      <Button variant="ghost" onclick={() => openEditor(file)}>
         <Code class="size-4 stroke-1" />
       </Button>
     </Tooltip.Trigger>

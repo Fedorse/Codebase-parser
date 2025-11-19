@@ -52,8 +52,8 @@
   </div>
 
   <div class="flex items-center gap-2">
-    {#if parseQueue.size > 0}
-      <div class="bg-card/80 flex items-center gap-3 rounded-md border px-3 py-1">
+    {#if parseQueue.size > 0 && !isHome}
+      <div class="bg-card/80 flex items-center gap-3 rounded-md border px-3 py-1 shadow-2xs">
         <div
           class={{
             'text-warn': parseQueue.hasActiveParsing,
@@ -81,8 +81,9 @@
               </div>
             {/if}
           </div>
-          <p class="text-muted-foreground truncate text-[11px]">
-            {parseQueue.size} queue • {parseQueue.completedParses.length} completed
+          <p class="text-muted-foreground truncate text-[10px]">
+            {parseQueue.size} queue
+            {parseQueue.completedParses.length} completed
           </p>
         </div>
 

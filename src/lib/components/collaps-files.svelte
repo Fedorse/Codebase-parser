@@ -5,6 +5,7 @@
   import FileText from '@lucide/svelte/icons/file-text';
   import Button from '$lib/components/ui/button/button.svelte';
   import { Skeleton } from '$lib/components/ui/skeleton';
+  import { pushState } from '$app/navigation';
 
   type Props = {
     files: Promise<ParsedFileListItem[]>;
@@ -26,6 +27,10 @@
   let open = $state(true);
 
   const toggle = () => (open = !open);
+
+  const openEdit = (file: File) => {
+    pushState('', { editFile: { id: file.id } });
+  };
 </script>
 
 <Collapsible.Root bind:open class="w-full ">
@@ -60,9 +65,9 @@
           {#if resolvedFiles.length > 0}
             {#each resolvedFiles as f}
               <li>
-                <a
-                  href="/files/{f.id}/edit"
-                  class="hover:bg-muted/40 flex items-center gap-3 px-3 py-2"
+                <div
+                  class="hover:bg-muted/40 flex cursor-pointer items-center gap-3 px-3 py-2"
+                  onclick={() => openEdit(f)}
                 >
                   <FileText class="text-muted-foreground size-5 stroke-1" />
                   <div class="min-w-0 flex-1">
@@ -70,13 +75,11 @@
                     <div class="text-muted-foreground truncate text-xs">{f.directory_path}</div>
                   </div>
                   <div class="text-muted-foreground text-xs">{formatFileSize(f.total_size)}</div>
-                </a>
+                </div>
               </li>
             {/each}
           {:else}
-            <div
-              class="text-muted-foreground rounded-md border border-dashed p-4 text-center text-xs"
-            >
+            <div class="text-muted-foreground divide-border rounded-md p-4 text-center text-xs">
               No saved files
             </div>
           {/if}
