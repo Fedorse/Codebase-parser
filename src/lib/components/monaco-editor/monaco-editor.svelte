@@ -96,6 +96,17 @@
       }
     });
 
+    editor.addAction({
+      id: 'open-command-palette-with-cmd-k',
+      label: 'Command Palette',
+      keybindings: [monaco.KeyMod.CtrlCmd | monaco.KeyCode.KeyK],
+      contextMenuGroupId: 'navigation',
+      contextMenuOrder: 0,
+      run: (ed) => {
+        ed.getAction('editor.action.quickCommand')?.run();
+      }
+    });
+
     editor.onDidChangeModelContent(() => {
       value = editor!.getValue();
     });

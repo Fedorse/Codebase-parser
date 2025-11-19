@@ -28,9 +28,9 @@
               </div>
               <div class="flex w-full justify-between">
                 <p class="text-muted-foreground text-xs">
-                  {parse.files_amount} files • {parse.parse_progress === 100
-                    ? 'complete'
-                    : 'in progress'}
+                  {parse.files_amount} files
+                  <span class="text-muted-foreground/30 text-sm">|</span>
+                  {parse.parse_progress === 100 ? 'completed' : 'in progress'}
                 </p>
                 <span class="text-sm">
                   {parse.parse_progress.toFixed(1)}%

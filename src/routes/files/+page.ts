@@ -1,7 +1,7 @@
-import type { LayoutLoad } from './$types';
+import type { PageLoad } from './$types';
 import { getSavedFiles } from '$lib/tauri';
 
-export const load: LayoutLoad = ({ depends }) => {
+export const load: PageLoad = ({ depends }) => {
   depends('app:files');
   const savedCount = parseInt(localStorage.getItem('files-count') || '4', 10);
   const filesPromise = getSavedFiles()

@@ -11,7 +11,6 @@
   import ParseQueue from '$lib/components/card-queue.svelte';
   import * as Empty from '$lib/components/ui/empty/index.js';
   import { Spinner } from '$lib/components/ui/spinner/index.js';
-  import { scrambleText } from '$lib/utils/scramble-transition';
 
   import type { FileTree } from '$lib/type';
 
