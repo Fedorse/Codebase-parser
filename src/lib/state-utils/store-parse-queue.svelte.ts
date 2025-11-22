@@ -1,14 +1,15 @@
 import { invalidateAll } from '$app/navigation';
 import { listen } from '@tauri-apps/api/event';
 
-interface ParseProgress {
+export type ParseProgress = {
   parse_id: string;
   parse_progress: number;
   files_amount: number;
   result_file_path: string | null;
-}
+};
 class ParseQueue {
   queue = $state<Map<string, ParseProgress>>(new Map());
+  isSideBarOpen = $state(false);
   unlisten: (() => void) | undefined;
 
   constructor() {
@@ -61,6 +62,10 @@ class ParseQueue {
   add(progress: ParseProgress) {
     this.queue.set(progress.parse_id, progress);
     this.queue = new Map(this.queue);
+  }
+
+  setOpen(value: boolean) {
+    this.isSideBarOpen = value;
   }
 
   remove(parseId: string) {

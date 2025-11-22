@@ -13,23 +13,23 @@
     ControlButton
   } from '@xyflow/svelte';
   import '@xyflow/svelte/dist/style.css';
-  import Dagre from '@dagrejs/dagre';
-  import * as Tabs from '$lib/components/ui/tabs/index.js';
-  import { onMount } from 'svelte';
-  import { mode } from 'mode-watcher';
-  import CustomNode from '$lib/components/node.svelte';
   import { getCurrentWindow } from '@tauri-apps/api/window';
-
-  import type { FileNode, GraphData } from '@/lib/utils/utils';
+  import Dagre from '@dagrejs/dagre';
+  import { onMount } from 'svelte';
+  import { pushState } from '$app/navigation';
+  import { mode } from 'mode-watcher';
+  import * as Tabs from '$lib/components/ui/tabs/index.js';
+  import CustomNode from '@/routes/graph/node.svelte';
   import { ArrowLeftRight, ArrowUpDown, Fullscreen } from '@lucide/svelte';
-  import { goto, pushState } from '$app/navigation';
-  type Direction = 'TB' | 'LR';
-  type WithMeasured<T> = T & { measured?: { width?: number; height?: number } };
 
-  const WIDTH_NODE = 160;
+  import type { FileTree, GraphData, Direction, WithMeasured } from '@/lib/type';
+
+  const WIDTH_NODE = 180;
   const HEIGHT_NODE = 46;
 
-  const { tree = [], fileId } = $props<{ tree?: FileNode[] }>();
+  type Props = { tree?: FileTree[]; fileId: string };
+
+  const { tree = [], fileId }: Props = $props();
 
   const { fitView } = useSvelteFlow();
 
@@ -54,7 +54,13 @@
     }
   };
 
-  for (const r of tree) if (r.type === 'Directory') expandedDirs.add(r.path);
+  $effect.pre(() => {
+    const initialSet = new Set<string>();
+    for (const r of tree) {
+      if (r.type === 'Directory') initialSet.add(r.path);
+    }
+    expandedDirs = initialSet;
+  });
 
   const toggleDir = (path: string) => {
     const next = expandedDirs;
@@ -67,12 +73,12 @@
     pushState('', { editFile: { id: fileId, searchPath: path } });
   };
 
-  const buildNode = (file: FileNode): Node<GraphData> => ({
+  const buildNode = (file: FileTree): Node<GraphData> => ({
     id: file.path,
     type: 'fileNode',
     data: {
       label: file.name,
-      type: file.type === 'Directory' ? 'dir' : 'file',
+      type: file.type,
       path: file.path,
       onToggle: file.type === 'Directory' ? toggleDir : undefined,
       open: file.type === 'Directory' ? expandedDirs.has(file.path) : undefined,
@@ -88,11 +94,11 @@
     target: childPath
   });
 
-  function collectVisible(input: FileNode[]) {
-    const outNodes: Node[] = [];
+  function collectVisible(input: FileTree[]) {
+    const outNodes: Node<GraphData>[] = [];
     const outEdges: Edge[] = [];
 
-    const walk = (n: FileNode, parentId?: string) => {
+    const walk = (n: FileTree, parentId?: string) => {
       outNodes.push(buildNode(n));
       if (parentId) outEdges.push(buildEdge(parentId, n.path));
 
@@ -177,13 +183,13 @@
       >
     </Controls>
     <Panel position="top-right" class="flex gap-2">{@render layoutSwitch()}</Panel>
-    <Background bgColor="var(--background)" size={1} />
+    <Background bgColor="var(--background)" size={0.7} />
   </SvelteFlow>
 </div>
 
 {#snippet layoutSwitch()}
   <Tabs.Root bind:value={direction}>
-    <Tabs.List class="h-10! gap-2">
+    <Tabs.List class="bg-card/20 h-10! gap-2">
       <Tabs.Trigger
         value="LR"
         class="inline-flex items-center gap-2"
@@ -206,3 +212,46 @@
     </Tabs.List>
   </Tabs.Root>
 {/snippet}
+
+<style>
+  :global(.svelte-flow__panel.svelte-flow__attribution) {
+    display: none;
+  }
+
+  :global(.svelte-flow__controls) {
+    background: var(--card/20);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+  }
+
+  :global(.svelte-flow__controls button) {
+    background: transparent;
+    color: var(--card-foreground);
+    border-bottom: 1px solid var(--border);
+    gap: 0.35rem;
+    padding: 0.45rem 0.6rem;
+    width: 100%;
+    transition:
+      background-color 140ms ease,
+      color 140ms ease,
+      transform 100ms ease,
+      box-shadow 140ms ease;
+  }
+
+  :global(.svelte-flow__controls button:hover) {
+    background-color: color-mix(in oklab, var(--card) 75%, var(--foreground) 25%);
+  }
+
+  :global(.svelte-flow__controls button:first-child) {
+    border-radius: calc(var(--radius, 0.625rem) - 2px) calc(var(--radius, 0.625rem) - 2px) 0 0;
+  }
+
+  :global(.svelte-flow__controls button:last-child) {
+    border-bottom: 1px solid var(--border);
+    border-radius: 0 0 calc(var(--radius, 0.625rem) - 2px) calc(var(--radius, 0.625rem) - 2px);
+  }
+
+  :global(.svelte-flow__controls button path) {
+    fill: currentColor;
+  }
+</style>

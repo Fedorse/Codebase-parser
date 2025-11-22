@@ -1,13 +1,15 @@
-import { getFileMetadata } from '$lib/tauri';
 import { redirect } from '@sveltejs/kit';
+import { getFileMetadata } from '$lib/tauri';
 import type { PageLoad } from './$types';
 
 export const load: PageLoad = async ({ params }) => {
-  const metadata = await getFileMetadata(params.id);
+  const metadata = await getFileMetadata(String(params.id));
 
   if (!metadata) {
     redirect(302, '/files');
   }
+
+  console.log(metadata.file_tree);
 
   return { metadata, tree: metadata.file_tree };
 };

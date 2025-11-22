@@ -1,7 +1,7 @@
 import { invoke } from '@tauri-apps/api/core';
 import { getCurrentWindow } from '@tauri-apps/api/window';
 
-import type { File, FileDetail, FileTree } from '@/lib/type.ts';
+import type { File, FileDetail, FileTree, FileMetadata } from '@/lib/type.ts';
 
 export const ensureChildrenArrays = (nodes: FileTree[]): FileTree[] => {
   for (const n of nodes) {
@@ -11,25 +11,13 @@ export const ensureChildrenArrays = (nodes: FileTree[]): FileTree[] => {
   return nodes;
 };
 
-export const setSelectedRecursive = (nodes: FileTree[], value = true): FileTree[] => {
+export const setSelectedRecursive = (nodes: FileTree[]): FileTree[] => {
   for (const n of nodes) {
-    n.selected = value;
-    if (n.type === 'Directory' && n.children?.length) setSelectedRecursive(n.children, value);
+    n.selected = true;
+    if (n.type === 'Directory' && n.children?.length) setSelectedRecursive(n.children);
   }
   return nodes;
 };
-
-// export const collectSelectedPath = (nodes: FileTreeNode[]): string[] => {
-//   const paths: string[] = [];
-//   for (const n of nodes) {
-//     if (n.type === 'File') {
-//       if (n.selected) paths.push(n.path);
-//     } else if (n.children?.length) {
-//       paths.push(...collectSelectedPath(n.children));
-//     }
-//   }
-//   return paths;
-// };
 
 export const collectSelectedPath = (nodes: FileTree[]): string[] => {
   const paths: string[] = [];
@@ -55,8 +43,7 @@ export const getPreviewTree = async (paths: string[]): Promise<FileTree[]> => {
 
 export const getPreviewTreeUI = async (paths: string[]): Promise<FileTree[]> => {
   const tree = await getPreviewTree(paths);
-  // ensureChildrenArrays(tree);
-  setSelectedRecursive(tree, true);
+  setSelectedRecursive(tree);
   return tree;
 };
 
@@ -65,15 +52,15 @@ export const getSavedFiles = async (limit?: number): Promise<File[]> => {
   return files;
 };
 
-export const parsePaths = async (paths: string[]) => {
+export const parsePaths = async (paths: string[]): Promise<void> => {
   await invoke('parse', { paths });
 };
 
-export const deleteFile = async (file: File) => {
+export const deleteFile = async (file: File): Promise<void> => {
   await invoke('delete_file', { dirName: file.id });
 };
 
-export const updateFile = async (content: string, file: FileDetail | null) => {
+export const updateFile = async (content: string, file: FileDetail | null): Promise<void> => {
   await invoke('update_file', { dirName: file?.id, content: content });
 };
 
@@ -81,7 +68,7 @@ export const getFileContent = async (file: FileDetail): Promise<string> => {
   return await invoke('get_file_content', { dirName: file.id });
 };
 
-export const openDefaultEditor = async (file: FileDetail) => {
+export const openDefaultEditor = async (file: FileDetail): Promise<void> => {
   await invoke('open_in_default_editor', { dirName: file.id });
   const window = await getCurrentWindow();
   const isFullScreen = await window.isFullscreen();
@@ -90,7 +77,9 @@ export const openDefaultEditor = async (file: FileDetail) => {
   }
 };
 
-export const openFileInfolder = async (file: File | FileDetail) => {
+type FileWithId = { id: string };
+
+export const openFileInfolder = async (file: FileWithId): Promise<void> => {
   await invoke('open_in_folder', { dirName: file.id });
   const window = await getCurrentWindow();
   const isFullScreen = await window.isFullscreen();
@@ -99,18 +88,18 @@ export const openFileInfolder = async (file: File | FileDetail) => {
   }
 };
 
-export const renameFile = async (file: FileDetail, newName: string) => {
+export const renameFile = async (file: FileDetail, newName: string): Promise<void> => {
   await invoke('rename_file', { dirName: String(file.id), newName: newName });
 };
 
-export const getFileDetail = async (fileId: string) => {
+export const getFileDetail = async (fileId: string): Promise<FileDetail | null> => {
   const detail = await invoke<FileDetail>('get_file_detail', {
     dirName: fileId
   });
   return detail;
 };
 
-export const getFileMetadata = async (dirName: string) => {
-  const metadata = await invoke('get_file_metadata', { dirName });
+export const getFileMetadata = async (dirName: string): Promise<FileMetadata | null> => {
+  const metadata = await invoke<FileMetadata>('get_file_metadata', { dirName });
   return metadata;
 };

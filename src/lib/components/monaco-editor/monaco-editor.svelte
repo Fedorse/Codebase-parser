@@ -161,7 +161,7 @@
   });
 </script>
 
-<div bind:this={editorContainer} class={`h-full w-full ${className}`} />
+<div bind:this={editorContainer} class={`bg-card/20 h-full w-full ${className}`} />
 
 <style>
   :global(.monaco-menu .action-item:has(.action-label[aria-label='Copy'])),

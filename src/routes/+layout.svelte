@@ -4,6 +4,7 @@
   import { ModeWatcher } from 'mode-watcher';
   import NavBar from '$lib/components/app-navbar.svelte';
   import FileDialogEdit from '$lib/components/file-dialog-edit.svelte';
+  import ParseQueueSideBar from '@/lib/components/parse-queue-side-bar.svelte';
   import * as Tooltip from '$lib/components/ui/tooltip/index.js';
   import { Toaster } from '$lib/components/ui/sonner/index.js';
 
@@ -38,6 +39,7 @@
     <main class="flex flex-1 p-4">
       <ModeWatcher />
       {@render children?.()}
+      <ParseQueueSideBar />
     </main>
     {#if editFile}
       <FileDialogEdit

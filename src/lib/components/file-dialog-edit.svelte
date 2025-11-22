@@ -23,9 +23,9 @@
   import { Spinner } from '$lib/components/ui/spinner/index.js';
   import { Skeleton } from '$lib/components/ui/skeleton';
 
-  let { fileId, searchPath, onClose } = $props();
-
   import type { FileDetail } from '@/lib/type.ts';
+
+  let { fileId, searchPath, onClose } = $props();
 
   const THIRTY_MB_SIZE = 30 * 1024 * 1024;
 
@@ -57,6 +57,7 @@
     confirmOpen = false;
     isOpen = false;
     onClose();
+    if (rename !== file?.metadata.name) await invalidate('app:files');
   };
 
   const handleOpenChange = (open: boolean) => {
@@ -129,8 +130,6 @@
     if (!file || rename === file.name) return;
     try {
       await renameFile(file, rename.trim());
-      await invalidate('app:files');
-
       toast.success('Renamed file');
     } catch (e) {
       console.error(e);

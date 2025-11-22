@@ -3,16 +3,6 @@ import { twMerge } from 'tailwind-merge';
 
 import type { FileTree } from '@/lib/type.ts';
 
-export type GraphData = {
-  label: string;
-  type: 'file' | 'dir';
-  path: string;
-  onToggle?: (p: string) => void;
-  open?: boolean;
-  dir: 'TB' | 'LR';
-  openEditor?: (path: string) => void;
-};
-
 export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
 }

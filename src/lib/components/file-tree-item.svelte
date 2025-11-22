@@ -4,7 +4,8 @@
   import { FileIcon, FolderIcon, ChevronRight, FolderOpen } from '@lucide/svelte/icons';
   import { Checkbox } from '$lib/components/ui/checkbox';
   import { Label } from '$lib/components/ui/label';
-  import Self from '$lib/components/file-tree-item.svelte';
+
+  import Self from './file-tree-item.svelte';
   import { setSelected } from '@/lib/utils/utils';
 
   import type { FileTree } from '@/lib/type.ts';
@@ -19,22 +20,28 @@
 
   let checkboxState = $derived.by(() => {
     if (node.type !== 'Directory' || !node.children?.length) {
-      return { isChecked: node.selected, isIndeterminate: false };
+      return { checked: node.selected ?? false, indeterminate: false };
     }
 
-    const allChildrenChecked = node.children.every((child: FileTree) => child.selected);
-    const noChildrenChecked = node.children.every((child: FileTree) => !child.selected);
+    const all = node.children.every((c: FileTree) => c.selected);
+    const none = node.children.every((c: FileTree) => !c.selected);
 
     return {
-      isChecked: allChildrenChecked,
-      isIndeterminate: !allChildrenChecked && !noChildrenChecked
+      checked: all,
+      indeterminate: !all && !none
     };
+  });
+
+  $effect(() => {
+    if (node.type === 'Directory') {
+      node.selected = checkboxState.checked;
+    }
   });
 </script>
 
 {#if node.type === 'File'}
-  <li class=" hover:bg-muted/50 flex items-center gap-2 pt-1 transition-all">
-    <Checkbox bind:checked={node.selected} onCheckedChange={onToggle} />
+  <li class="hover:bg-muted/50 flex items-center gap-2 pt-1 transition-all">
+    <Checkbox bind:checked={node.selected} />
     <div
       class={{
         'flex w-full items-center gap-2': true,
@@ -63,17 +70,19 @@
             'rotate-90': isOpen
           }}
         />
+
         <Checkbox
-          checked={checkboxState.isChecked}
+          checked={checkboxState.checked}
+          indeterminate={checkboxState.indeterminate}
           onCheckedChange={onToggle}
-          indeterminate={checkboxState.isIndeterminate}
           onclick={(e: MouseEvent) => e.stopPropagation()}
         />
+
         <div
           class={{
             'flex w-full items-center gap-2': true,
-            'text-primary': node.selected,
-            'text-primary/20': !node.selected
+            'text-primary': checkboxState.indeterminate || checkboxState.checked,
+            'text-primary/20': !checkboxState.indeterminate && !checkboxState.checked
           }}
         >
           {#if isOpen}

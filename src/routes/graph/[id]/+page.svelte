@@ -1,6 +1,6 @@
 <script lang="ts">
   import { SvelteFlowProvider } from '@xyflow/svelte';
-  import Diagram from '@/lib/components/diagram.svelte';
+  import Diagram from '@/routes/graph/diagram.svelte';
 
   let { data } = $props();
 </script>

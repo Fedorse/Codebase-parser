@@ -40,6 +40,7 @@
   --highlight: oklch(0.85 0.15 270);
   --ring-highlight: oklch(34.346% 0.22047 268.497);
   --warn: oklch(75.624% 0.15999 65.947);
+  --success: oklch(64.047% 0.19982 143.942);
 }
 
 .dark {
@@ -77,6 +78,7 @@
   --highlight: oklch(46.482% 0.23942 273.492);
   --ring-highlight: oklch(34.346% 0.22047 268.497);
   --warn: oklch(75.624% 0.15999 65.947);
+  --success: oklch(64.047% 0.19982 143.942);
 }
 
 @theme inline {
@@ -118,6 +120,7 @@
   --color-highlight: var(--highlight);
   --color-warn: var(--warn);
   --color-ring-highlight: var(--ring-highlight);
+  --color-success: var(--success);
 }
 
 @layer base {

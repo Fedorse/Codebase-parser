@@ -11,12 +11,18 @@
   import ParseQueue from '$lib/components/card-queue.svelte';
   import { Button } from '$lib/components/ui/button/index';
   import { Spinner } from '$lib/components/ui/spinner/index.js';
+  import { parseQueue } from '@/lib/state-utils/store-parse-queue.svelte';
 
   import type { FileTree, DragEventPayload } from '$lib/type';
+  import ParseQueueDrawer from '@/lib/components/parse-queue-side-bar.svelte';
 
   let { data } = $props();
 
   let filesTreeNodes = $state<FileTree[]>([]);
+
+  $effect(() => {
+    console.log('filesTreeNodes', filesTreeNodes);
+  });
 
   let isDialogOpen = $state(false);
   let isDragging = $state(false);
@@ -50,6 +56,7 @@
     filesTreeNodes = [];
 
     try {
+      parseQueue.setOpen(true);
       await parsePaths(paths);
       toast.success('Parse successfully completed');
     } catch (err) {
@@ -159,8 +166,7 @@
         </div>
       </div>
     </Card.Content>
-
-    <ParseQueue />
+    <!-- <ParseQueue /> -->
     <div class="border-border border-t px-6 pt-4">
       <RecentFiles files={data.recentFiles} />
     </div>

@@ -10,6 +10,8 @@
   type Props = { filesTree: FileTree[]; open: boolean; onParse: () => void };
 
   let { filesTree, open = $bindable(false), onParse }: Props = $props();
+  
+  console.log('filesTree', filesTree);
 
   let allSelected = $state(true);
 
