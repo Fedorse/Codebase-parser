@@ -18,7 +18,7 @@
   import Badge from '$lib/components/ui/badge/badge.svelte';
   import MonacoEditor from '$lib/components/monaco-editor/monaco-editor.svelte';
   import ConfirmDialog from '$lib/components/confirm-dialog.svelte';
-  import { Route, Code, Copy, FolderOpen, Save, Network } from '@lucide/svelte/icons';
+  import { Route, Code, Copy, FolderOpen, Save, Network, Loader } from '@lucide/svelte/icons';
   import { Spinner } from '$lib/components/ui/spinner/index.js';
   import { Skeleton } from '$lib/components/ui/skeleton';
   import Srotcuts from '$lib/components/shortcuts-help.svelte';
@@ -230,7 +230,7 @@
         {:else if isContentLoading || isMetaLoading}
           <div class=" flex h-full w-full items-center justify-center">
             <div class="flex items-center gap-2">
-              <Spinner size="6" />
+              <Loader class="size-4 animate-spin stroke-1" />
               <span class="text-muted-foreground text-sm">Reading file...</span>
             </div>
           </div>
@@ -300,6 +300,7 @@
       <Tooltip.Trigger>
         <Button
           variant="ghost"
+          disabled={isLargeFile}
           size="icon"
           class="text-muted-foreground size-8"
           onclick={() => goto(`/graph/${file?.id}`)}
@@ -313,6 +314,7 @@
     <Tooltip.Root>
       <Tooltip.Trigger>
         <Button
+          disabled={isLargeFile}
           variant="ghost"
           size="icon"
           class="text-muted-foreground size-8"
@@ -329,6 +331,7 @@
     <Tooltip.Root>
       <Tooltip.Trigger>
         <Button
+          disabled={isLargeFile}
           variant="ghost"
           size="icon"
           class="text-muted-foreground size-8"
@@ -340,9 +343,20 @@
       <Tooltip.Content>Copy content</Tooltip.Content>
     </Tooltip.Root>
 
-    <Button variant={'ghost'} size="sm" disabled={!isTainted} onclick={saveContent}>
-      <Save class="size-4" />
-    </Button>
+    <Tooltip.Root>
+      <Tooltip.Trigger>
+        <Button
+          disabled={isLargeFile || !isTainted}
+          variant="ghost"
+          class="text-muted-foreground"
+          size="icon"
+          onclick={saveContent}
+        >
+          <Save class="size-4" />
+        </Button>
+      </Tooltip.Trigger>
+      <Tooltip.Content>Save</Tooltip.Content>
+    </Tooltip.Root>
   </div>
 {/snippet}
 

@@ -4,7 +4,8 @@
   import * as ScrollArea from '$lib/components/ui/scroll-area';
   import { Button } from '$lib/components/ui/button';
   import { Progress } from '$lib/components/ui/progress';
-  import { Loader, Terminal, Trash2, FileCheck, Hash } from '@lucide/svelte/icons';
+  import { Terminal, Trash2, Hash, X } from '@lucide/svelte/icons';
+  import CubeLoader from '$lib/components/cube-loader.svelte';
 
   import type { ParseProgress } from '$lib/state-utils/store-parse-queue.svelte';
 
@@ -14,7 +15,10 @@
 </script>
 
 <Sheet.Root bind:open={parseQueue.isSideBarOpen}>
-  <Sheet.Content side="right" class=" flex w-[500px] flex-col sm:w-[450px] 2xl:w-[600px]">
+  <Sheet.Content
+    side="right"
+    class="flex w-[500px] flex-col rounded-tl-xl rounded-bl-xl sm:w-[450px] 2xl:w-[600px] "
+  >
     <Sheet.Header class="border-b pt-6 pr-2 pl-8">
       <Sheet.Title class="text-lg">System Activity</Sheet.Title>
       <Sheet.Description>Current parsing queue status.</Sheet.Description>
@@ -62,19 +66,11 @@
   >
     <div class="flex items-start justify-between gap-3">
       <div class="flex items-center gap-3">
-        <div
-          class={{
-            'flex size-8 shrink-0 items-center justify-center rounded border  shadow-sm': true,
-            'text-success border-success/20  bg-success/5': isDone,
-            'text-warn bg-warn/10 border-warn/40 ': !isDone
-          }}
-        >
-          {#if isDone}
-            <FileCheck class="size-4 stroke-1" />
-          {:else}
-            <Loader class="size-4 animate-spin stroke-1" />
-          {/if}
-        </div>
+        {#if isDone}
+          <CubeLoader class="h-full w-full" size="16px" variant="success" />
+        {:else}
+          <CubeLoader class="h-full w-full" size="16px" variant="loading" />
+        {/if}
 
         <div class="flex flex-col gap-0.5">
           <div class="flex items-center gap-2">
@@ -102,16 +98,16 @@
           class="text-muted-foreground/50 hover:text-destructive size-4 shrink-0 self-center"
           onclick={() => parseQueue.remove(item.parse_id)}
         >
-          <Trash2 class="size-4" />
+          <X class="size-4" />
         </Button>
       {/if}
     </div>
 
     <div class="flex items-center gap-2">
       <Progress value={item.parse_progress} class="bg-secondary h-1.5" />
-      <span class="text-muted-foreground text-xs">
+      <p class="text-muted-foreground text-xs tabular-nums">
         {Math.round(item.parse_progress)}%
-      </span>
+      </p>
     </div>
   </div>
 {/snippet}

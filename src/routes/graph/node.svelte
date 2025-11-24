@@ -16,17 +16,10 @@
   const isHorizontal = $derived(data?.dir === 'LR');
 </script>
 
-<!-- 
-class={{
-  'group bg-card text-card-foreground h-full w-full rounded-xl border pb-2 shadow-sm': true,
-  'py-2': !data.label,
-  'ring-active-focus border-active-focus shadow-active-focus shadow-xl': !!data.highlighted
-}} -->
-
 <div
   class={{
-    'bg-card/40 text-card-foreground   flex max-h-[46px] min-h-[40px] max-w-[180px] min-w-[180px] items-center justify-between gap-1 rounded-md border px-3 py-2 text-sm  shadow-sm': true,
-    'ring-chart-2 border-chart-2 shadow-chart-2 shadow-lg': isOpen
+    'bg-card/40 text-card-foreground   flex max-h-[46px] min-h-[40px] max-w-[180px] min-w-[180px] items-center justify-between gap-1 rounded-md border px-3 py-2 text-sm  ': true,
+    ' border-success shadow-success/50 shadow-lg': isOpen
   }}
 >
   <!-- svelte-ignore a11y_click_events_have_key_events -->

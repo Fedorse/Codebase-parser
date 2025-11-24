@@ -2,9 +2,10 @@
   import { page } from '$app/state';
   import { goto } from '$app/navigation';
   import { parseQueue } from '$lib/state-utils/store-parse-queue.svelte';
-  import { Loader, FileCheck, ArrowLeft, MonitorCog } from '@lucide/svelte/icons';
+  import { ArrowLeft, MonitorCog } from '@lucide/svelte/icons';
   import ToggleThemeButton from '$lib/components/theme-switch-button.svelte';
-  import Button from './ui/button/button.svelte';
+  import { Button } from '$lib/components/ui/button/index';
+  import CubeLoader from '$lib/components/cube-loader.svelte';
 
   const isHome = $derived(page.url.pathname === '/');
 
@@ -58,8 +59,7 @@
   <button
     onclick={toggleSidebar}
     class={{
-      'group hover:bg-accent/50 bg-card/20 flex h-10 cursor-pointer items-center gap-3 rounded-md border pr-4 shadow-sm transition-all active:scale-95': true,
-      'bg-success/10': !parseQueue.hasActiveParsing
+      'group hover:bg-accent/50 bg-card/20 flex h-10 cursor-pointer items-center gap-3 rounded-md border pr-4 shadow-sm transition-all active:scale-95': true
     }}
   >
     <div
@@ -68,9 +68,9 @@
       }}
     >
       {#if parseQueue.hasActiveParsing}
-        <Loader class="size-4 animate-spin stroke-1" />
+        <CubeLoader class="h-full w-full" variant="loading" size="16px" />
       {:else}
-        <FileCheck class="text-success/70 size-4 stroke-1" />
+        <CubeLoader class="h-full w-full" variant="success" size="16px" />
       {/if}
     </div>
 
@@ -79,15 +79,6 @@
         <span class="text-foreground text-xs">
           {parseQueue.hasActiveParsing ? 'Processing files' : 'Queue Ready'}
         </span>
-
-        {#if parseQueue.hasActiveParsing}
-          <div class="relative flex size-1.5">
-            <span
-              class="bg-warn/50 absolute inline-flex h-full w-full animate-ping rounded-full opacity-75"
-            ></span>
-            <span class="bg-warn relative inline-flex size-1.5 rounded-full"></span>
-          </div>
-        {/if}
       </div>
 
       <div class="text-muted-foreground flex items-center gap-1.5 text-[10px]">

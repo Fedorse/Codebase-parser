@@ -7,10 +7,10 @@
   import { uniq } from 'es-toolkit';
   import FileDialogTree from '$lib/components/file-dialog-tree.svelte';
   import * as Card from '$lib/components/ui/card';
-  import * as Empty from '$lib/components/ui/empty/index.js';
   import RecentFiles from '$lib/components/collaps-files.svelte';
   import { Button } from '$lib/components/ui/button/index';
-  import { Spinner } from '$lib/components/ui/spinner/index.js';
+  import { Folder, FolderOpen } from '@lucide/svelte';
+  import CubeLoader from '@/lib/components/cube-loader.svelte';
   import { parseQueue } from '@/lib/state-utils/store-parse-queue.svelte';
 
   import type { FileTree, DragEventPayload } from '$lib/type';
@@ -138,29 +138,36 @@
     <Card.Content class="py-4">
       <div
         class={{
-          'w-full rounded-2xl border border-dashed  text-center transition-all ': true,
+          'h-48 w-full rounded-2xl border  border-dashed text-center transition-all ': true,
           'border-border border-[1.5px]': !isDragging,
-          'bg-input border-highlight ring-primary/40 ring-2': isDragging,
-          'p-0': isLoadingPreview,
-          'p-10': !isLoadingPreview
+          'bg-card/40 border-highlight ring-primary/40 ring-2': isDragging
         }}
       >
-        <div class="">
-          {#if isDragging}
-            <div class="flex flex-col items-center gap-2">
-              <div class="mb-1 text-7xl leading-none">📂</div>
-            </div>
-          {:else if isLoadingPreview}
+        <div
+          class="animate-in fade-in zoom-in-95 flex h-full w-full flex-col items-center justify-center gap-8 py-6 duration-300"
+        >
+          {#if isLoadingPreview}
             {@render loadingTree()}
           {:else}
-            <div class="flex flex-col items-center gap-2">
-              <div class="mb-1 text-7xl leading-none">📁</div>
+            <div class="group flex flex-col items-center transition-all">
+              <button
+                onclick={handleOpenFiles}
+                class="bg-muted/30 group-hover:bg-muted rounded-full p-4 transition-all duration-300 group-hover:scale-110"
+              >
+                {#if isDragging}
+                  <FolderOpen class="text-primary size-16 stroke-[1.5]" />
+                {:else}
+                  <Folder
+                    class="text-muted-foreground/50 group-hover:text-foreground size-12 transition-colors"
+                  />
+                {/if}
+              </button>
             </div>
           {/if}
         </div>
       </div>
     </Card.Content>
-    <!-- <ParseQueue /> -->
+
     <div class="border-border border-t px-6 pt-4">
       <RecentFiles files={data.recentFiles} />
     </div>
@@ -176,13 +183,18 @@
 </main>
 
 {#snippet loadingTree()}
-  <Empty.Root class="w-full">
-    <Empty.Header>
-      <Empty.Media variant="default">
-        <Spinner size="6" />
-      </Empty.Media>
-      <Empty.Title>Processing files.</Empty.Title>
-      <Empty.Description>Please wait while we process scanning files.</Empty.Description>
-    </Empty.Header>
-  </Empty.Root>
+  <div
+    class="animate-in fade-in zoom-in-95 flex h-full w-full flex-col items-center justify-center py-6 duration-300"
+  >
+    <CubeLoader class="h-full w-full" size="32px" variant="default" />
+
+    <div class="flex flex-col items-center gap-1 pt-6 text-center">
+      <h3 class="text-foreground text-sm font-semibold tracking-tight">
+        Scanning Directory Structure...
+      </h3>
+      <p class="text-muted-foreground max-w-[260px] text-xs">
+        Large directories may take a moment.
+      </p>
+    </div>
+  </div>
 {/snippet}
