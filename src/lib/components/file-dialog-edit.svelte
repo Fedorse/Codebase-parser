@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { z } from 'zod';
   import { goto, invalidate } from '$app/navigation';
   import { onMount } from 'svelte';
   import { page } from '$app/state';
@@ -26,7 +27,9 @@
     Save,
     Network,
     Loader,
-    TriangleAlert
+    TriangleAlert,
+    CircleX,
+    CircleCheck
   } from '@lucide/svelte/icons';
   import { Skeleton } from '$lib/components/ui/skeleton';
   import Srotcuts from '$lib/components/shortcuts-help.svelte';
@@ -39,16 +42,28 @@
 
   const THIRTY_MB_SIZE = 30 * 1024 * 1024;
 
+  const renameSchema = z
+    .string()
+    .min(1, 'Name cannot be empty')
+    .max(255, 'Name cannot be longer than 255 characters')
+    .regex(/^[^\\/:*?"<>|]+$/, 'Invalid characters in filename');
+
   let file = $state<FileDetail | null>(null);
+
   let rename = $state<string>('');
+  let renameError = $state<string | null>('');
+  let renameSuccess = $state(false);
+
   let snapshot = $state<string>('');
   let value = $state<string>('');
+
   let isOpen = $state(true);
   let confirmOpen = $state(false);
   let isMetaLoading = $state(false);
   let isContentLoading = $state(false);
-  let inputEl = $state<HTMLInputElement | null>(null);
   let searchFound = $state(true);
+
+  let inputEl = $state<HTMLInputElement | null>(null);
 
   const isTainted = $derived(value !== snapshot);
   const isLargeFile = $derived(file ? file.metadata.total_size > THIRTY_MB_SIZE : false);
@@ -92,6 +107,7 @@
       e.preventDefault();
       e.stopPropagation();
       rename = file.metadata.name;
+      renameError = null;
       inputEl?.blur();
     }
   };
@@ -118,10 +134,6 @@
       isMetaLoading = false;
     }
 
-    if (!file || file.metadata.total_size > THIRTY_MB_SIZE) {
-      return;
-    }
-
     if (file && file.metadata.total_size <= THIRTY_MB_SIZE) {
       try {
         isContentLoading = true;
@@ -137,17 +149,37 @@
   };
 
   const handleRename = async () => {
-    if (!file || rename === file.name) return;
-    try {
-      await renameFile(file, rename.trim());
-      file.metadata.name = rename.trim();
+    if (!file) return;
 
-      toast.success('Renamed file');
+    if (rename === file.metadata.name) {
+      renameError = null;
+      return;
+    }
+    const validation = renameSchema.safeParse(rename);
+
+    if (!validation.success) {
+      renameError = validation.error.issues[0]?.message ?? 'Invalid name';
+      return;
+    }
+
+    try {
+      renameError = null;
+      const newName = validation.data;
+      await renameFile(file, newName);
+      rename = newName;
+      renameSuccess = true;
+
+      setTimeout(() => {
+        renameSuccess = false;
+      }, 3000);
     } catch (e) {
       console.error(e);
-      toast.error('Rename failed');
-      rename = file.name;
+      renameError = 'System failed to rename file';
+      rename = file.metadata.name;
     }
+  };
+  const onRenameInput = () => {
+    if (renameError) renameError = null;
   };
 
   const openEditor = async (file: FileDetail) => {
@@ -216,7 +248,14 @@
           <Input
             bind:value={rename}
             onblur={handleRename}
-            class="max-w-[30vw] border border-transparent bg-transparent! text-lg! hover:border-blue-900! focus-visible:border-blue-900 focus-visible:ring-0"
+            oninput={onRenameInput}
+            class={{
+              'max-w-[30vw] text-lg! transition-colors focus-visible:ring-0': true,
+              'border-destructive! text-destructive! focus-visible:border-destructive!':
+                renameError,
+              'border border-transparent bg-transparent! hover:border-blue-900! focus-visible:border-blue-900':
+                !renameError
+            }}
             onkeydown={onRenameKeydown}
             bind:ref={inputEl}
             tabindex={page.state.focus ? 0 : -1}
@@ -257,35 +296,60 @@
           <Skeleton class="bg-muted/50 h-4 w-md rounded" />
         {:else}
           {#if isTainted}
-            <div class="animate-in fade-in text-warn flex items-center gap-1.5 font-medium">
+            <div class="animate-in fade-in text-warn flex items-center gap-1.5">
               <div class="bg-warn size-1.5 rounded-full"></div>
               Unsaved changes
             </div>
           {:else}
-            <div class="flex items-center gap-1.5">
+            <div class="animate-in fade-in flex items-center gap-1.5">
               <div class="bg-chart-2 size-1.5 rounded-full"></div>
               Ready
             </div>
           {/if}
-          {#if file}
-            <Separator orientation="vertical" class=" text-muted bg-foreground/20 h-4 max-h-4" />
-            <span>{formatFileSize(file.metadata.total_size)}</span>
-            <Separator orientation="vertical" class=" text-muted bg-foreground/20 h-4 max-h-4" />
 
-            <div class="text-muted-foreground flex items-center gap-2 text-xs">
-              <Route class="text-muted-foreground size-3 stroke-1 " />
-              <span class="max-w-[500px] truncate">
-                <!-- {file?.metadata.directory_path} -->
-                /Users/ivans/work/parser-ai/src-tauri/Cargo.toml
+          {#if file}
+            <Separator orientation="vertical" class="bg-foreground/20 h-4 max-h-4" />
+            <span>{formatFileSize(file.metadata.total_size)}</span>
+            <Separator orientation="vertical" class="bg-foreground/20 h-4 max-h-4" />
+
+            <div
+              class="text-muted-foreground flex max-w-[200px] min-w-0 items-center gap-2 text-xs md:max-w-[300px] lg:max-w-[450px]"
+            >
+              <Route class="text-muted-foreground size-3 shrink-0 stroke-1" />
+
+              <span
+                class="min-w-0 truncate text-left"
+                style="direction: rtl;"
+                title={file.metadata.directory_path}
+              >
+                <!-- &lrm;{file.metadata.directory_path} -->
+                &lrm;/Users/ivans/work/parser-ai/src-tauri/Cargo.toml/Users/ivans/work/parser-ai/src-tauri/Cargo.toml
               </span>
+
               {#if isLargeFile}
-                <span class="text-border px-1">•</span>
-                <span class="text-warn font-medium">Large File</span>
+                <span class="text-border shrink-0 px-1">•</span>
+                <span class="text-warn shrink-0 font-medium">Large File</span>
               {/if}
             </div>
+
+            {#if renameError}
+              <div
+                class="animate-in fade-in slide-in-from-left-2 text-destructive flex items-center gap-1.5"
+              >
+                <CircleX class="size-3.5 stroke-1" />
+                <span>{renameError}</span>
+              </div>
+            {:else if renameSuccess}
+              <div
+                class="animate-in fade-in slide-in-from-left-2 text-success flex items-center gap-1.5 font-medium"
+              >
+                <CircleCheck class="size-3.5 stroke-1" />
+                <span>Renamed successfully</span>
+              </div>
+            {/if}
             {#if !searchFound}
-              <div class="flex items-center gap-1.5">
-                <TriangleAlert class="text-warn size-3.5" />
+              <div class="animate-in fade-in slide-in-from-left-2 flex items-center gap-1.5">
+                <TriangleAlert class="text-warn size-3.5 stroke-1" />
                 <span class="text-warn">No results found</span>
               </div>
             {/if}

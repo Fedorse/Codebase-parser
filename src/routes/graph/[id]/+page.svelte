@@ -5,6 +5,7 @@
   let { data } = $props();
 </script>
 
+
 <SvelteFlowProvider>
   <Diagram tree={data.tree} fileId={data.metadata.id} metadata={data.metadata} />
 </SvelteFlowProvider>

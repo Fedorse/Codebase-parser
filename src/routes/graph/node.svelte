@@ -31,7 +31,7 @@
         'text-primary flex min-w-0 items-center gap-2 ': true,
         'text-primary/20': isDir && !isOpen
       }}
-      onclick={() => isDir && data?.onToggle?.(data.path)}
+      onclick={() => isDir && data.onToggle?.(data.path)}
     >
       {#if !isOpen}
         <Folder class="size-4 shrink-0" />

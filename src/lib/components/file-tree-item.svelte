@@ -1,15 +1,14 @@
 <script lang="ts">
+  import { sumBy } from 'es-toolkit';
   import { formatFileSize } from '@/lib/utils/utils';
   import * as Collapsible from '$lib/components/ui/collapsible';
   import { FileIcon, FolderIcon, ChevronRight, FolderOpen } from '@lucide/svelte/icons';
   import { Checkbox } from '$lib/components/ui/checkbox';
   import { Label } from '$lib/components/ui/label';
-
-  import Self from './file-tree-item.svelte';
   import { setSelected } from '@/lib/utils/utils';
+  import Self from './file-tree-item.svelte';
 
   import type { FileTree } from '@/lib/type.ts';
-  import { sumBy } from 'es-toolkit';
 
   let { node, isRoot = false } = $props();
 

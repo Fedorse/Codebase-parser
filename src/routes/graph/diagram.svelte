@@ -1,4 +1,6 @@
 <script lang="ts">
+  import { getCurrentWindow } from '@tauri-apps/api/window';
+  import { asyncNoop } from 'es-toolkit';
   import {
     SvelteFlow,
     Background,
@@ -13,7 +15,6 @@
     ControlButton
   } from '@xyflow/svelte';
   import '@xyflow/svelte/dist/style.css';
-  import { getCurrentWindow } from '@tauri-apps/api/window';
   import Dagre from '@dagrejs/dagre';
   import { onMount } from 'svelte';
   import { pushState } from '$app/navigation';
@@ -37,7 +38,6 @@
 
   let direction = $state<Direction>('TB');
   let expandedDirs = $state<Set<string>>(new Set());
-  let parentEl = null as HTMLElement | null;
 
   const nodeTypes: NodeTypes = {
     fileNode: CustomNode
@@ -82,7 +82,7 @@
       label: file.name,
       type: file.type,
       path: file.path,
-      onToggle: file.type === 'Directory' ? toggleDir : undefined,
+      onToggle: file.type === 'Directory' ? toggleDir : asyncNoop,
       open: file.type === 'Directory' ? expandedDirs.has(file.path) : undefined,
       dir: direction,
       openEditor: openInEditor,
@@ -178,7 +178,7 @@
   onMount(rebuildAndLayout);
 </script>
 
-<div class="w-full" bind:this={parentEl}>
+<div class="w-full">
   <SvelteFlow
     bind:nodes
     bind:edges
@@ -203,7 +203,7 @@
       <Tabs.Trigger
         value="LR"
         class="inline-flex items-center gap-2"
-        onclick={(e) => toggleLayout('LR')}
+        onclick={() => toggleLayout('LR')}
         title="Horizontal layout"
       >
         <ArrowLeftRight class="size-4" />
@@ -213,7 +213,7 @@
       <Tabs.Trigger
         value="TB"
         class="inline-flex items-center gap-2"
-        onclick={(e) => toggleLayout('TB')}
+        onclick={() => toggleLayout('TB')}
         title="Vertical layout"
       >
         <ArrowUpDown class="size-4" />

@@ -77,12 +77,6 @@
             </div>
           {/if}
         </ul>
-      {:catch error}
-        <div
-          class="rounded-md border border-red-200 bg-red-50 p-4 text-center text-xs text-red-600"
-        >
-          Failed to load files
-        </div>
       {/await}
     </div></Collapsible.Content
   >

@@ -1,8 +1,8 @@
 import { invoke } from '@tauri-apps/api/core';
 import { getCurrentWindow } from '@tauri-apps/api/window';
+import { orderBy } from 'es-toolkit';
 
 import type { File, FileDetail, FileTree, FileMetadata } from '@/lib/type.ts';
-import { orderBy } from 'es-toolkit'; // <--- Импортируем orderBy
 
 export const ensureChildrenArrays = (nodes: FileTree[]): FileTree[] => {
   for (const n of nodes) {

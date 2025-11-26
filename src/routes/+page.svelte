@@ -51,7 +51,7 @@
     filesTreeNodes = [];
 
     try {
-      parseQueue.setOpen(true);
+      parseQueue.setPending(true);
       await parsePaths(paths);
       toast.success('Parse successfully completed');
     } catch (err) {

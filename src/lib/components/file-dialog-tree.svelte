@@ -1,16 +1,15 @@
 <script lang="ts">
+  import { sumBy } from 'es-toolkit';
   import { formatFileSize, setSelectedAll } from '@/lib/utils/utils';
   import FileTreeItem from '$lib/components/file-tree-item.svelte';
   import * as Dialog from '$lib/components/ui/dialog';
   import { Button } from '$lib/components/ui/button';
   import { Separator } from '$lib/components/ui/separator';
-  import { Switch } from '$lib/components/ui/switch'; // Импортируем Switch
-  import { Label } from '$lib/components/ui/label'; // Импортируем Label
+  import { Switch } from '$lib/components/ui/switch';
+  import { HardDrive } from '@lucide/svelte';
+  import Badge from '$lib/components/ui/badge/badge.svelte';
 
   import type { FileTree } from '$lib/type';
-  import { CheckSquare, HardDrive, Square } from '@lucide/svelte';
-  import Badge from './ui/badge/badge.svelte';
-  import { sumBy } from 'es-toolkit';
 
   type Props = { filesTree: FileTree[]; open: boolean; onParse: () => void };
 
@@ -36,7 +35,7 @@
 </script>
 
 <Dialog.Root bind:open>
-  <Dialog.Content class="flex h-[80vh] w-[60vw] flex-col">
+  <Dialog.Content class="flex flex-col sm:h-[80vh] sm:w-[95vw] lg:h-[80vh] lg:w-[60vw]">
     <Dialog.Header class="flex gap-2">
       <Dialog.Title class="text-lg ">Select Files to Parse</Dialog.Title>
       <Dialog.Description class="text-xs">

@@ -10,6 +10,8 @@ export type ParseProgress = {
 class ParseQueue {
   queue = $state<Map<string, ParseProgress>>(new Map());
   isSideBarOpen = $state(false);
+  isPending = $state(false);
+
   unlisten: (() => void) | undefined;
 
   constructor() {
@@ -23,6 +25,9 @@ class ParseQueue {
         const progress = event.payload;
         const prev = this.queue.get(progress.parse_id);
         const isComplete = progress.parse_progress === 100;
+        if (this.isPending) {
+          this.isPending = false;
+        }
 
         const MIN_STEP = 0.5;
         if (
@@ -59,6 +64,14 @@ class ParseQueue {
   get hasActiveParsing() {
     return this.activeParses.length > 0;
   }
+
+  setPending(value: boolean) {
+    this.isPending = true;
+    if (value) {
+      this.setOpen(true);
+    }
+  }
+
   add(progress: ParseProgress) {
     this.queue.set(progress.parse_id, progress);
     this.queue = new Map(this.queue);

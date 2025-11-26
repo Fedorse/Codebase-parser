@@ -5,6 +5,7 @@
   import { Button } from '$lib/components/ui/button';
   import { Progress } from '$lib/components/ui/progress';
   import { Terminal, Trash2, Hash, X } from '@lucide/svelte/icons';
+  import { Skeleton } from '$lib/components/ui/skeleton';
   import CubeLoader from '$lib/components/cube-loader.svelte';
 
   import type { ParseProgress } from '$lib/state-utils/store-parse-queue.svelte';
@@ -24,7 +25,7 @@
       <Sheet.Description>Current parsing queue status.</Sheet.Description>
     </Sheet.Header>
 
-    {#if parseQueue.size === 0}
+    {#if parseQueue.size === 0 && !parseQueue.isPending}
       <div class="flex flex-1 flex-col items-center justify-center p-6 text-center opacity-50">
         <div class="bg-muted mb-4 rounded-full p-4">
           <Terminal class="size-8 stroke-1" />
@@ -33,6 +34,18 @@
         <p class="text-muted-foreground mt-1 text-xs">Processed files log will appear here.</p>
       </div>
     {:else}
+      {#if parseQueue.isPending}
+        <div class="border-b px-4 py-4">
+          <div class="flex items-center gap-3">
+            <Skeleton class="bg-muted/80 h-4 w-4 rounded" />
+            <div class="flex w-full flex-col gap-1.5">
+              <Skeleton class="bg-muted/80 h-4 w-3/4" />
+              <Skeleton class="bg-muted/80 h-3 w-1/2" />
+            </div>
+          </div>
+          <Skeleton class="bg-muted/80 mt-3 h-1.5 w-full" />
+        </div>
+      {/if}
       <ScrollArea.Root class="flex-1">
         <div class="flex flex-col px-2">
           {#each Array.from(parseQueue.queue.values()).reverse() as item (item.parse_id)}
