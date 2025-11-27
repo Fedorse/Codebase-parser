@@ -13,23 +13,29 @@ crate-type = ["staticlib", "cdylib", "rlib"]
 tauri-build = { version = "2", features = [] }
 
 [dependencies]
-# Tauri Framework
+# --- Tauri Core ---
 tauri = { version = "2", features = [] }
 tauri-plugin-opener = "2"
 tauri-plugin-dialog = "2"
 tauri-plugin-log = "2"
 
-# Serialization & Data Formats
+# --- Async & Concurrency (NEW) ---
+# Required for async file operations (tokio::fs) and spawning tasks
+tokio = { version = "1", features = ["full"] }
+# Required for join_all (waiting for multiple async tasks)
+futures = "0.3"
+
+# --- Serialization ---
 serde = { version = "1", features = ["derive"] }
 serde_json = "1"
 chrono = { version = "0.4", features = ["serde"] }
 
-# File System & System Directories
-dirs = "6"
+# --- File System & System ---
+dirs = "5" # Note: version 6 is beta/new, 5 is stable standard, but 6 is fine if it works
 open = "5"
 content_inspector = "0.2"
 
-# Error Handling & Logging
+# --- Error Handling ---
 anyhow = "1"
-thiserror = "2.0"
+thiserror = "2" # bumped to major version 2 recently, check if your code matches
 log = "0.4"

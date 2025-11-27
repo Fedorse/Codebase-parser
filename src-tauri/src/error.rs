@@ -23,3 +23,10 @@ impl From<std::io::Error> for CommandError {
     }
 }
 
+impl From<serde_json::Error> for CommandError {
+    fn from(err: serde_json::Error) -> Self {
+        Self {
+            message: err.to_string(),
+        }
+    }
+}
