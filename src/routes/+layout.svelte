@@ -7,6 +7,8 @@
   import ParseQueueSideBar from '@/lib/components/parse-queue-side-bar.svelte';
   import * as Tooltip from '$lib/components/ui/tooltip/index.js';
   import { Toaster } from '$lib/components/ui/sonner/index.js';
+  import { fly, fade, scale, blur } from 'svelte/transition';
+  import { cubicOut, quintOut, expoOut, sineIn } from 'svelte/easing';
 
   let { children } = $props();
   const editFile = $derived(page.state.editFile);
@@ -14,17 +16,35 @@
   const handleCloseEditor = () => {
     history.back();
   };
+  // 2
+  //     in:fly={{ x: 20, duration: 300 }}
+  //   out:fly={{ x: -20, duration: 300 }}
+  // 3
+  //     in:fly={{ x: '100%', duration: 400, easing: cubicOut, opacity: 1, delay: 400 }}
+  //   out:fly={{ x: '-20%', duration: 400, easing: cubicOut, opacity: 0 }}
+  // 1
+  //   in:fly={{ y: 20, duration: 200, easing: cubicOut, delay: 200 }}
+  // out:fly={{ y: -20, duration: 200, easing: sineIn }}
 </script>
 
 <Tooltip.Provider delayDuration={1000}>
   <Toaster richColors={true} position="bottom-right" />
-  <div class="flex h-screen flex-col">
+  <div class="flex h-screen w-screen flex-col">
     <NavBar />
-    <main class="flex flex-1 p-4">
-      <ModeWatcher />
-      {@render children?.()}
-      <ParseQueueSideBar />
+    <ModeWatcher />
+
+    <main class=" grid flex-1">
+      {#key page.url.pathname}
+        <div
+          class="col-start-1 row-start-1 h-full w-full"
+          in:fly={{ y: 20, duration: 200, easing: cubicOut, delay: 200 }}
+          out:fly={{ y: -20, duration: 200, easing: sineIn }}
+        >
+          {@render children?.()}
+        </div>
+      {/key}
     </main>
+
     {#if editFile}
       <FileDialogEdit
         fileId={editFile.id}
@@ -32,5 +52,6 @@
         onClose={() => handleCloseEditor()}
       />
     {/if}
+    <ParseQueueSideBar />
   </div>
 </Tooltip.Provider>
