@@ -40,8 +40,9 @@ pub struct FileMetadata {
 pub struct ParseMetadata {
     pub id: String,
     pub name: String,
+    pub path: String,
     pub created_at: DateTime<Local>,
-    pub updated_at: DateTime<Local>, // Added this
+    pub updated_at: DateTime<Local>,
     pub files_count: usize,
     pub total_size: u64,
 }
@@ -84,11 +85,13 @@ pub enum ParsedPath {
 // CORE FUNCTIONS
 // ============================================================================
 
-pub async fn parse_files_async(
+pub fn parse_files(
     paths: Vec<String>,
     app: AppHandle,
 ) -> Result<ParseMetadata> {
     let (parse_dir, mut output_file, parse_id) = create_parse_directory()?;
+
+    // Safety: count_text_files now handles is_text_file correctly
     let total_files = count_text_files(&paths)?;
 
     emit_progress(&app, &parse_id, 0, total_files, None);
@@ -102,6 +105,8 @@ pub async fn parse_files_async(
     for path_str in &paths {
         let path = Path::new(path_str);
         if path.exists() {
+            // Check for symlinks at root level too
+            if path.is_symlink() { continue; }
             file_tree.push(build_file_tree(&path)?);
         }
     }
@@ -109,6 +114,10 @@ pub async fn parse_files_async(
     // 2. Process Files
     for path_str in paths {
         let path = Path::new(&path_str);
+
+        // Skip symlinks
+        if path.is_symlink() { continue; }
+
         if path.is_dir() {
             process_directory_with_progress(
                 &path, &mut output_file, &mut parsed_files, &mut total_size,
@@ -126,8 +135,9 @@ pub async fn parse_files_async(
     let metadata = ParseMetadata {
         id: parse_id.clone(),
         name: parse_id.clone(),
+        path: parse_dir.to_string_lossy().to_string(),
         created_at: now,
-        updated_at: now, // Initially same as created_at
+        updated_at: now,
         files_count: parsed_files.len(),
         total_size,
     };
@@ -147,13 +157,11 @@ pub async fn parse_files_async(
     let tree_file = File::create(&tree_path)?;
     serde_json::to_writer_pretty(tree_file, &tree_data)?;
 
-    // Emit completion
     let content_path = get_content_path(&parse_dir);
     emit_progress(&app, &parse_id, total_files, total_files, Some(content_path.display().to_string()));
 
     Ok(metadata)
 }
-
 // ============================================================================
 // HELPER FUNCTIONS
 // ============================================================================
@@ -164,16 +172,26 @@ fn process_single_text_file(
     parsed_files: &mut Vec<FileMetadata>,
     total_size: &mut u64,
 ) -> Result<bool> {
-    if !is_text_file(path)? {
+    // FIX: Removed '?' because is_text_file now returns bool
+    if !is_text_file(path) {
         return Ok(false);
     }
 
-    write_file_content(path, output_file)?;
-    let metadata = get_file_metadata(path)?;
-    *total_size += metadata.size;
-    parsed_files.push(metadata);
-
-    Ok(true)
+    match write_file_content(path, output_file) {
+        Ok(_) => {
+            if let Ok(metadata) = get_file_metadata(path) {
+                *total_size += metadata.size;
+                parsed_files.push(metadata);
+                Ok(true)
+            } else {
+                Ok(false)
+            }
+        },
+        Err(e) => {
+            eprintln!("Skipping file due to read/write error: {:?} - {}", path, e);
+            Ok(false)
+        }
+    }
 }
 
 fn process_directory_with_progress(
@@ -189,17 +207,68 @@ fn process_directory_with_progress(
     if let Ok(entries) = fs::read_dir(dir) {
         for entry in entries.flatten() {
             let path = entry.path();
+
+            if path.is_symlink() { continue; }
+
             if path.is_dir() {
-                process_directory_with_progress(
+                let _ = process_directory_with_progress(
                     &path, output_file, parsed_files, total_size,
                     current_count, total_files, app, parse_id,
-                )?;
-            } else if process_single_text_file(&path, output_file, parsed_files, total_size)? {
-                *current_count += 1;
-                emit_progress(app, parse_id, *current_count, total_files, None);
+                );
+            } else {
+                if let Ok(processed) = process_single_text_file(&path, output_file, parsed_files, total_size) {
+                    if processed {
+                        *current_count += 1;
+                        emit_progress(app, parse_id, *current_count, total_files, None);
+                    }
+                }
             }
         }
     }
+    Ok(())
+}
+
+/// MODIFIED: Returns bool directly, swallows errors as "false"
+fn is_text_file(path: &Path) -> bool {
+    if !path.is_file() { return false; }
+
+    // Try to open. If fails (permission, lock), return false (Skip)
+    let mut file = match File::open(path) {
+        Ok(f) => f,
+        Err(_) => return false,
+    };
+
+    let mut buf = [0u8; 8192];
+
+    // Try to read. If fails, return false (Skip)
+    let sample_len = match file.read(&mut buf) {
+        Ok(len) => len,
+        Err(_) => return false,
+    };
+
+    // If empty file, technically it's text, but do we want to parse it?
+    // Let's say yes, or it returns valid non-binary content.
+    if sample_len == 0 { return true; }
+
+    // Perform the binary check
+    !matches!(inspect(&buf[..sample_len]), ContentType::BINARY)
+}
+
+/// MODIFIED: Separated logic to distinguish read errors from write errors better
+fn write_file_content(path: &Path, output_file: &mut File) -> Result<()> {
+    // Try opening source again.
+    let mut file = File::open(&path).with_context(|| format!("Opening {}", path.display()))?;
+
+    // We strictly catch errors writing the HEADER to output
+    writeln!(output_file, "===== {} =====", path.display())?;
+
+    // Copy content.
+    // If `io::copy` fails, it might be the Source reading OR Output writing.
+    io::copy(&mut file, output_file)?;
+
+    // Write footer
+    writeln!(output_file)?;
+
     Ok(())
 }
 
@@ -227,7 +296,11 @@ pub fn build_file_tree(path: &Path) -> Result<ParsedPath> {
 
         if let Ok(entries) = fs::read_dir(path) {
             for entry in entries.flatten() {
-                if let Ok(tree) = build_file_tree(&entry.path()) {
+                let child_path = entry.path();
+                // FIX: Symlink check added
+                if child_path.is_symlink() { continue; }
+
+                if let Ok(tree) = build_file_tree(&child_path) {
                     total_size += match &tree {
                         ParsedPath::File { size, .. } => *size,
                         ParsedPath::Directory { size, .. } => *size,
@@ -244,13 +317,13 @@ pub fn build_file_tree(path: &Path) -> Result<ParsedPath> {
         })
     } else {
         let metadata = get_file_metadata(path)?;
-        let size = if is_text_file(path)? { metadata.size } else { 0 };
+        // FIX: Removed '?' here because is_text_file returns bool
+        let size = if is_text_file(path) { metadata.size } else { 0 };
 
         Ok(ParsedPath::File {
             name,
             size,
             path: file_path,
-            // Removed last_modified
         })
     }
 }
@@ -274,12 +347,6 @@ pub fn update_content(parse_dir: &Path, content: &str) -> Result<()> {
     Ok(())
 }
 
-// ... (Keep existing helpers: save_metadata, load_metadata, etc.)
-// ... (Keep existing helpers: create_parse_directory, count_text_files, etc.)
-// ... (Keep existing helpers: is_text_file, write_file_content)
-// ... (Keep existing helpers: get_app_dir, get_parse_dir, init_app_structure)
-// ... (Keep existing helpers: open functions)
-
 // --- Copy these specific helpers to ensure they match ---
 
 fn emit_progress(app: &AppHandle, parse_id: &str, current: usize, total: usize, file_path: Option<String>) {
@@ -295,7 +362,7 @@ fn count_text_files(paths: &[String]) -> Result<usize> {
     for path_str in paths {
         let path = Path::new(path_str);
         if path.is_dir() { count += count_text_files_in_dir(path)?; }
-        else if is_text_file(path)? { count += 1; }
+        else if is_text_file(path) { count += 1; }
     }
     Ok(count)
 }
@@ -306,27 +373,19 @@ fn count_text_files_in_dir(dir: &Path) -> Result<usize> {
         for entry in entries.flatten() {
             let path = entry.path();
             if path.is_dir() { count += count_text_files_in_dir(&path)?; }
-            else if is_text_file(&path)? { count += 1; }
+            else if is_text_file(&path) { count += 1; }
         }
     }
     Ok(count)
 }
 
-fn is_text_file(path: &Path) -> Result<bool> {
-    if !path.is_file() { return Ok(false); }
-    let mut file = File::open(path).with_context(|| format!("Opening {}", path.display()))?;
-    let mut buf = [0u8; 8192];
-    let sample = file.read(&mut buf).with_context(|| format!("Reading {}", path.display()))?;
-    Ok(!matches!(inspect(&buf[..sample]), ContentType::BINARY))
-}
-
-fn write_file_content(path: &Path, output_file: &mut File) -> Result<()> {
-    writeln!(output_file, "===== {} =====", path.display())?;
-    let mut file = File::open(&path).with_context(|| format!("Opening {}", path.display()))?;
-    io::copy(&mut file, output_file)?;
-    writeln!(output_file)?;
-    Ok(())
-}
+// fn write_file_content(path: &Path, output_file: &mut File) -> Result<()> {
+//     writeln!(output_file, "===== {} =====", path.display())?;
+//     let mut file = File::open(&path).with_context(|| format!("Opening {}", path.display()))?;
+//     io::copy(&mut file, output_file)?;
+//     writeln!(output_file)?;
+//     Ok(())
+// }
 
 pub fn save_metadata(path: &Path, metadata: &ParseMetadata) -> Result<()> {
     let file = File::create(path)?;

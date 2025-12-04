@@ -8,10 +8,27 @@ use tokio::fs as tokio_fs;
 use futures::future::join_all;
 
 // ... (parse, get_preview_tree remain same) ...
+// #[tauri::command]
+// pub async fn parse(paths: Vec<String>, app: tauri::AppHandle) -> Result<ParseMetadata, CommandError> {
+//     let metadata = utils::parse_files_async(paths, app).await?;
+//     Ok(metadata)
+// }
+
+
 #[tauri::command]
 pub async fn parse(paths: Vec<String>, app: tauri::AppHandle) -> Result<ParseMetadata, CommandError> {
-    let metadata = utils::parse_files_async(paths, app).await?;
-    Ok(metadata)
+    // Spawn a blocking thread.
+    // We cannot use '??' blindly because we need to convert JoinError -> CommandError
+    // AND utils::Error -> CommandError.
+
+    let result = tauri::async_runtime::spawn_blocking(move || {
+        utils::parse_files(paths, app)
+    })
+    .await
+    .map_err(|e| CommandError::from(anyhow::anyhow!("Thread join error: {}", e)))? // Handle thread panic
+    .map_err(CommandError::from)?; // Handle logic error inside parse_files_async
+
+    Ok(result)
 }
 
 #[tauri::command]
@@ -139,26 +156,6 @@ pub struct ParsedFileDetail {
     pub metadata: utils::CompleteParseDetail,
 }
 
-// #[tauri::command]
-// pub async fn get_file_detail(dir_name: String) -> Result<ParsedFileDetail, CommandError> {
-//     let parse_dir = utils::get_parse_dir(&dir_name)?;
-//     let content = utils::load_content(&parse_dir)?;
-//     let metadata_light = utils::load_metadata(&parse_dir)?;
-//     let tree_data = utils::load_tree(&parse_dir)?;
-
-//     let complete_metadata = utils::CompleteParseDetail {
-//         metadata: metadata_light.clone(),
-//         tree: tree_data,
-//     };
-
-//     Ok(ParsedFileDetail {
-//         id: dir_name,
-//         name: metadata_light.name,
-//         content,
-//         metadata: complete_metadata,
-//     })
-// }
-
 #[tauri::command]
 pub fn update_file(dir_name: String, content: String) -> Result<(), CommandError> {
     let parse_dir = utils::get_parse_dir(&dir_name)?;
@@ -194,18 +191,21 @@ pub fn rename_file(dir_name: String, new_name: String) -> Result<(), CommandErro
     utils::save_metadata(&utils::get_metadata_path(&parse_dir), &metadata)?;
     Ok(())
 }
+
 #[tauri::command]
 pub fn delete_file(dir_name: String) -> Result<(), CommandError> {
     let parse_dir = utils::get_parse_dir(&dir_name)?;
     fs::remove_dir_all(parse_dir)?;
     Ok(())
 }
+
 #[tauri::command]
 pub fn open_in_default_editor(dir_name: String) -> Result<(), CommandError> {
     let parse_dir = utils::get_parse_dir(&dir_name)?;
     utils::open_with_default_app(utils::OpenAction::OpenFile(utils::get_content_path(&parse_dir)))?;
     Ok(())
 }
+
 #[tauri::command]
 pub fn open_in_folder(dir_name: String) -> Result<(), CommandError> {
     let parse_dir = utils::get_parse_dir(&dir_name)?;
