@@ -28,7 +28,7 @@ export type File = {
   files_count: number;
   total_size: number;
   created_at: string;
-  last_modified: string;
+  updated_at: string;
 };
 
 export type DragEventType = 'over' | 'drop' | 'leave' | 'enter';

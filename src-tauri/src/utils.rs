@@ -452,10 +452,15 @@ fn reveal_in_folder(path: &Path) -> Result<()> {
             .arg(path)
             .spawn()?;
     }
+
     #[cfg(target_os = "linux")]
     {
-        let p = path.parent().unwrap();
-        Command::new("xdg-open").arg(p).spawn()?;
+        if let Some(parent) = path.parent() {
+            Command::new("xdg-open")
+                .arg(parent)
+                .spawn()?;
+        }
     }
+
     Ok(())
 }
