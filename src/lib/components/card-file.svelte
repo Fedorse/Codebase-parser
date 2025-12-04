@@ -73,7 +73,7 @@
     <Card.Description>
       <p class="text-muted-foreground flex items-center gap-1.5 text-xs">
         <Clock class="size-3" />
-        <span>{formatDate(file.last_modified)}</span>
+        <span>{formatDate(file.updated_at)}</span>
       </p>
     </Card.Description>
   </Card.Header>
