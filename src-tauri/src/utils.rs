@@ -12,57 +12,37 @@ use std::{
 };
 use tauri::{AppHandle, Emitter};
 
-// ============================================================================
-// CONSTANTS
-// ============================================================================
-
 pub const APP_NAME: &str = "parser-ai";
 pub const PARSED_FILES_DIR: &str = "parsed-files";
 pub const CONTENT_FILENAME: &str = "content.txt";
 pub const METADATA_FILENAME: &str = "metadata.json";
 pub const TREE_FILENAME: &str = "tree.json";
 
-// ============================================================================
-// DATA STRUCTURES
-// ============================================================================
-
-/// Metadata for a single file inside the tree (Streamlined)
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct FileMetadata {
     pub path: String,
     pub name: String,
     pub size: u64,
-    // Removed last_modified as requested
 }
 
-/// Session Metadata (Saved to metadata.json)
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct ParseMetadata {
     pub id: String,
     pub name: String,
+    pub path: String,
     pub created_at: DateTime<Local>,
-    pub updated_at: DateTime<Local>, // Added this
+    pub updated_at: DateTime<Local>,
     pub files_count: usize,
     pub total_size: u64,
 }
 
-/// Heavy tree structure (Saved to tree.json)
-#[derive(Debug, Serialize, Deserialize)]
-pub struct ParseTree {
-    pub files: Vec<FileMetadata>,
-    pub file_tree: Vec<ParsedPath>,
-}
-
-/// Combined struct for the Frontend Detail View
 #[derive(Debug, Serialize, Deserialize)]
 pub struct CompleteParseDetail {
     #[serde(flatten)]
     pub metadata: ParseMetadata,
-    #[serde(flatten)]
-    pub tree: ParseTree,
+    pub tree: Vec<ParsedPath>,
 }
 
-/// Tree structure for files and directories
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(tag = "type")]
 pub enum ParsedPath {
@@ -70,7 +50,6 @@ pub enum ParsedPath {
         name: String,
         path: String,
         size: u64,
-        // Removed last_modified here too
     },
     Directory {
         name: String,
@@ -80,14 +59,7 @@ pub enum ParsedPath {
     },
 }
 
-// ============================================================================
-// CORE FUNCTIONS
-// ============================================================================
-
-pub async fn parse_files_async(
-    paths: Vec<String>,
-    app: AppHandle,
-) -> Result<ParseMetadata> {
+pub fn parse_files(paths: Vec<String>, app: AppHandle) -> Result<ParseMetadata> {
     let (parse_dir, mut output_file, parse_id) = create_parse_directory()?;
     let total_files = count_text_files(&paths)?;
 
@@ -98,21 +70,33 @@ pub async fn parse_files_async(
     let mut current_count = 0;
     let mut file_tree = Vec::new();
 
-    // 1. Build Tree
     for path_str in &paths {
         let path = Path::new(path_str);
         if path.exists() {
+            if path.is_symlink() {
+                continue;
+            }
             file_tree.push(build_file_tree(&path)?);
         }
     }
 
-    // 2. Process Files
     for path_str in paths {
         let path = Path::new(&path_str);
+
+        if path.is_symlink() {
+            continue;
+        }
+
         if path.is_dir() {
             process_directory_with_progress(
-                &path, &mut output_file, &mut parsed_files, &mut total_size,
-                &mut current_count, total_files, &app, &parse_id,
+                &path,
+                &mut output_file,
+                &mut parsed_files,
+                &mut total_size,
+                &mut current_count,
+                total_files,
+                &app,
+                &parse_id,
             )?;
         } else if process_single_text_file(&path, &mut output_file, &mut parsed_files, &mut total_size)? {
             current_count += 1;
@@ -122,41 +106,35 @@ pub async fn parse_files_async(
 
     let now = Local::now();
 
-    // 3. Create Lightweight Metadata
     let metadata = ParseMetadata {
         id: parse_id.clone(),
         name: parse_id.clone(),
+        path: parse_dir.to_string_lossy().to_string(),
         created_at: now,
-        updated_at: now, // Initially same as created_at
+        updated_at: now,
         files_count: parsed_files.len(),
         total_size,
     };
 
-    // 4. Create Heavy Tree Data
-    let tree_data = ParseTree {
-        files: parsed_files,
-        file_tree,
-    };
-
-    // 5. Save Files
     let metadata_path = parse_dir.join(METADATA_FILENAME);
     let meta_file = File::create(&metadata_path)?;
     serde_json::to_writer_pretty(meta_file, &metadata)?;
 
     let tree_path = parse_dir.join(TREE_FILENAME);
     let tree_file = File::create(&tree_path)?;
-    serde_json::to_writer_pretty(tree_file, &tree_data)?;
+    serde_json::to_writer_pretty(tree_file, &file_tree)?;
 
-    // Emit completion
     let content_path = get_content_path(&parse_dir);
-    emit_progress(&app, &parse_id, total_files, total_files, Some(content_path.display().to_string()));
+    emit_progress(
+        &app,
+        &parse_id,
+        total_files,
+        total_files,
+        Some(content_path.display().to_string()),
+    );
 
     Ok(metadata)
 }
-
-// ============================================================================
-// HELPER FUNCTIONS
-// ============================================================================
 
 fn process_single_text_file(
     path: &Path,
@@ -164,16 +142,25 @@ fn process_single_text_file(
     parsed_files: &mut Vec<FileMetadata>,
     total_size: &mut u64,
 ) -> Result<bool> {
-    if !is_text_file(path)? {
+    if !is_text_file(path) {
         return Ok(false);
     }
 
-    write_file_content(path, output_file)?;
-    let metadata = get_file_metadata(path)?;
-    *total_size += metadata.size;
-    parsed_files.push(metadata);
-
-    Ok(true)
+    match write_file_content(path, output_file) {
+        Ok(_) => {
+            if let Ok(metadata) = get_file_metadata(path) {
+                *total_size += metadata.size;
+                parsed_files.push(metadata);
+                Ok(true)
+            } else {
+                Ok(false)
+            }
+        }
+        Err(e) => {
+            eprintln!("Skipping file due to read/write error: {:?} - {}", path, e);
+            Ok(false)
+        }
+    }
 }
 
 fn process_directory_with_progress(
@@ -189,36 +176,89 @@ fn process_directory_with_progress(
     if let Ok(entries) = fs::read_dir(dir) {
         for entry in entries.flatten() {
             let path = entry.path();
+
+            if path.is_symlink() {
+                continue;
+            }
+
             if path.is_dir() {
-                process_directory_with_progress(
-                    &path, output_file, parsed_files, total_size,
-                    current_count, total_files, app, parse_id,
-                )?;
-            } else if process_single_text_file(&path, output_file, parsed_files, total_size)? {
-                *current_count += 1;
-                emit_progress(app, parse_id, *current_count, total_files, None);
+                let _ = process_directory_with_progress(
+                    &path,
+                    output_file,
+                    parsed_files,
+                    total_size,
+                    current_count,
+                    total_files,
+                    app,
+                    parse_id,
+                );
+            } else {
+                if let Ok(processed) =
+                    process_single_text_file(&path, output_file, parsed_files, total_size)
+                {
+                    if processed {
+                        *current_count += 1;
+                        emit_progress(app, parse_id, *current_count, total_files, None);
+                    }
+                }
             }
         }
     }
     Ok(())
 }
 
+fn is_text_file(path: &Path) -> bool {
+    if !path.is_file() {
+        return false;
+    }
+
+    let mut file = match File::open(path) {
+        Ok(f) => f,
+        Err(_) => return false,
+    };
+
+    let mut buf = [0u8; 8192];
+    let sample_len = match file.read(&mut buf) {
+        Ok(len) => len,
+        Err(_) => return false,
+    };
+
+    if sample_len == 0 {
+        return true;
+    }
+
+    !matches!(inspect(&buf[..sample_len]), ContentType::BINARY)
+}
+
+fn write_file_content(path: &Path, output_file: &mut File) -> Result<()> {
+    let mut file = File::open(&path).with_context(|| format!("Opening {}", path.display()))?;
+
+    writeln!(output_file, "===== {} =====", path.display())?;
+    io::copy(&mut file, output_file)?;
+    writeln!(output_file)?;
+
+    Ok(())
+}
+
 fn get_file_metadata(path: &Path) -> Result<FileMetadata> {
     let metadata = fs::metadata(path)?;
-    // We removed last_modified from here as requested
     Ok(FileMetadata {
         path: path.to_string_lossy().to_string(),
-        name: path.file_name()
+        name: path
+            .file_name()
             .ok_or(anyhow::anyhow!("Failed to extract filename"))?
-            .to_string_lossy().to_string(),
+            .to_string_lossy()
+            .to_string(),
         size: metadata.len(),
     })
 }
 
 pub fn build_file_tree(path: &Path) -> Result<ParsedPath> {
-    let name = path.file_name()
+    let name = path
+        .file_name()
         .ok_or(anyhow::anyhow!("Failed to extract filename"))?
-        .to_string_lossy().to_string();
+        .to_string_lossy()
+        .to_string();
     let file_path = path.to_string_lossy().to_string();
 
     if path.is_dir() {
@@ -227,7 +267,12 @@ pub fn build_file_tree(path: &Path) -> Result<ParsedPath> {
 
         if let Ok(entries) = fs::read_dir(path) {
             for entry in entries.flatten() {
-                if let Ok(tree) = build_file_tree(&entry.path()) {
+                let child_path = entry.path();
+                if child_path.is_symlink() {
+                    continue;
+                }
+
+                if let Ok(tree) = build_file_tree(&child_path) {
                     total_size += match &tree {
                         ParsedPath::File { size, .. } => *size,
                         ParsedPath::Directory { size, .. } => *size,
@@ -244,29 +289,21 @@ pub fn build_file_tree(path: &Path) -> Result<ParsedPath> {
         })
     } else {
         let metadata = get_file_metadata(path)?;
-        let size = if is_text_file(path)? { metadata.size } else { 0 };
+        let size = if is_text_file(path) { metadata.size } else { 0 };
 
         Ok(ParsedPath::File {
             name,
             size,
             path: file_path,
-            // Removed last_modified
         })
     }
 }
 
-// ============================================================================
-// UPDATE LOGIC
-// ============================================================================
-
-/// Update content in a parse directory AND update the metadata timestamp
 pub fn update_content(parse_dir: &Path, content: &str) -> Result<()> {
-    // 1. Write Content
     let content_path = get_content_path(parse_dir);
     let mut file = File::create(content_path)?;
     file.write_all(content.as_bytes())?;
 
-    // 2. Update Metadata Timestamp
     let mut metadata = load_metadata(parse_dir)?;
     metadata.updated_at = Local::now();
     save_metadata(&get_metadata_path(parse_dir), &metadata)?;
@@ -274,28 +311,38 @@ pub fn update_content(parse_dir: &Path, content: &str) -> Result<()> {
     Ok(())
 }
 
-// ... (Keep existing helpers: save_metadata, load_metadata, etc.)
-// ... (Keep existing helpers: create_parse_directory, count_text_files, etc.)
-// ... (Keep existing helpers: is_text_file, write_file_content)
-// ... (Keep existing helpers: get_app_dir, get_parse_dir, init_app_structure)
-// ... (Keep existing helpers: open functions)
-
-// --- Copy these specific helpers to ensure they match ---
-
-fn emit_progress(app: &AppHandle, parse_id: &str, current: usize, total: usize, file_path: Option<String>) {
-    let progress = if total > 0 { (current as f32 / total as f32) * 100.0 } else { 0.0 };
-    let _ = app.emit("parse-progress", json!({
-        "parse_id": parse_id, "parse_progress": progress, "files_amount": total,
-        "result_file_path": file_path.unwrap_or(serde_json::Value::Null.to_string()),
-    }));
+fn emit_progress(
+    app: &AppHandle,
+    parse_id: &str,
+    current: usize,
+    total: usize,
+    file_path: Option<String>,
+) {
+    let progress = if total > 0 {
+        (current as f32 / total as f32) * 100.0
+    } else {
+        0.0
+    };
+    let _ = app.emit(
+        "parse-progress",
+        json!({
+            "parse_id": parse_id,
+            "parse_progress": progress,
+            "files_amount": total,
+            "result_file_path": file_path.unwrap_or(serde_json::Value::Null.to_string()),
+        }),
+    );
 }
 
 fn count_text_files(paths: &[String]) -> Result<usize> {
     let mut count = 0;
     for path_str in paths {
         let path = Path::new(path_str);
-        if path.is_dir() { count += count_text_files_in_dir(path)?; }
-        else if is_text_file(path)? { count += 1; }
+        if path.is_dir() {
+            count += count_text_files_in_dir(path)?;
+        } else if is_text_file(path) {
+            count += 1;
+        }
     }
     Ok(count)
 }
@@ -305,27 +352,14 @@ fn count_text_files_in_dir(dir: &Path) -> Result<usize> {
     if let Ok(entries) = fs::read_dir(dir) {
         for entry in entries.flatten() {
             let path = entry.path();
-            if path.is_dir() { count += count_text_files_in_dir(&path)?; }
-            else if is_text_file(&path)? { count += 1; }
+            if path.is_dir() {
+                count += count_text_files_in_dir(&path)?;
+            } else if is_text_file(&path) {
+                count += 1;
+            }
         }
     }
     Ok(count)
-}
-
-fn is_text_file(path: &Path) -> Result<bool> {
-    if !path.is_file() { return Ok(false); }
-    let mut file = File::open(path).with_context(|| format!("Opening {}", path.display()))?;
-    let mut buf = [0u8; 8192];
-    let sample = file.read(&mut buf).with_context(|| format!("Reading {}", path.display()))?;
-    Ok(!matches!(inspect(&buf[..sample]), ContentType::BINARY))
-}
-
-fn write_file_content(path: &Path, output_file: &mut File) -> Result<()> {
-    writeln!(output_file, "===== {} =====", path.display())?;
-    let mut file = File::open(&path).with_context(|| format!("Opening {}", path.display()))?;
-    io::copy(&mut file, output_file)?;
-    writeln!(output_file)?;
-    Ok(())
 }
 
 pub fn save_metadata(path: &Path, metadata: &ParseMetadata) -> Result<()> {
@@ -344,8 +378,12 @@ fn create_parse_directory() -> Result<(PathBuf, File, String)> {
     Ok((parse_dir, content_file, timestamp))
 }
 
-pub fn get_content_path(parse_dir: &Path) -> PathBuf { parse_dir.join(CONTENT_FILENAME) }
-pub fn get_metadata_path(parse_dir: &Path) -> PathBuf { parse_dir.join(METADATA_FILENAME) }
+pub fn get_content_path(parse_dir: &Path) -> PathBuf {
+    parse_dir.join(CONTENT_FILENAME)
+}
+pub fn get_metadata_path(parse_dir: &Path) -> PathBuf {
+    parse_dir.join(METADATA_FILENAME)
+}
 
 pub fn load_metadata(parse_dir: &Path) -> Result<ParseMetadata> {
     let path = parse_dir.join(METADATA_FILENAME);
@@ -363,30 +401,66 @@ pub fn load_content(parse_dir: &Path) -> Result<String> {
     Ok(fs::read_to_string(get_content_path(parse_dir))?)
 }
 
-// ... Keep init_app_structure, get_app_dir, get_parse_dir, open_with_default_app ...
 pub fn init_app_structure() -> Result<()> {
     let app_dir = get_app_dir()?;
-    if !app_dir.exists() { fs::create_dir(&app_dir)?; }
+    if !app_dir.exists() {
+        fs::create_dir(&app_dir)?;
+    }
     let parsed_dir = app_dir.join(PARSED_FILES_DIR);
-    if !parsed_dir.exists() { fs::create_dir(&parsed_dir)?; }
+    if !parsed_dir.exists() {
+        fs::create_dir(&parsed_dir)?;
+    }
     Ok(())
 }
+
 pub fn get_app_dir() -> Result<PathBuf> {
-    Ok(dirs::home_dir().ok_or(anyhow::anyhow!("No home dir"))?.join(APP_NAME))
+    Ok(dirs::home_dir()
+        .ok_or(anyhow::anyhow!("No home dir"))?
+        .join(APP_NAME))
 }
+
 pub fn get_parse_dir(dir_name: &str) -> Result<PathBuf> {
     Ok(get_app_dir()?.join(PARSED_FILES_DIR).join(dir_name))
 }
-pub enum OpenAction { OpenFile(PathBuf), RevealInFolder(PathBuf) }
+
+pub enum OpenAction {
+    OpenFile(PathBuf),
+    RevealInFolder(PathBuf),
+}
+
 pub fn open_with_default_app(action: OpenAction) -> Result<()> {
     match action {
-        OpenAction::OpenFile(p) => { open::that(p)?; Ok(()) },
+        OpenAction::OpenFile(p) => {
+            open::that(p)?;
+            Ok(())
+        }
         OpenAction::RevealInFolder(p) => reveal_in_folder(&p),
     }
 }
+
 fn reveal_in_folder(path: &Path) -> Result<()> {
-    #[cfg(target_os = "macos")] { Command::new("open").args(["-R", &path.to_string_lossy()]).spawn()?; }
-    #[cfg(target_os = "windows")] { Command::new("explorer").arg("/select,").arg(path).spawn()?; }
-    #[cfg(target_os = "linux")] { let p = path.parent().unwrap(); Command::new("xdg-open").arg(p).spawn()?; }
+    #[cfg(target_os = "macos")]
+    {
+        Command::new("open")
+            .args(["-R", &path.to_string_lossy()])
+            .spawn()?;
+    }
+    #[cfg(target_os = "windows")]
+    {
+        Command::new("explorer")
+            .arg("/select,")
+            .arg(path)
+            .spawn()?;
+    }
+
+    #[cfg(target_os = "linux")]
+    {
+        if let Some(parent) = path.parent() {
+            Command::new("xdg-open")
+                .arg(parent)
+                .spawn()?;
+        }
+    }
+
     Ok(())
 }

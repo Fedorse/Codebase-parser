@@ -22,7 +22,7 @@ class ParseQueue {
   async mount() {
     const storedAutoOpen = localStorage.getItem('parse-queue-auto-open');
     if (storedAutoOpen !== null) {
-      this.autoOpen = storedAutoOpen === 'true' ? true : false;
+      this.autoOpen = storedAutoOpen === 'true';
     }
 
     if (this.unlistenFn) return;
@@ -129,4 +129,5 @@ class ParseQueue {
     this.queue = new Map(this.queue);
   }
 }
+
 export const parseQueue = new ParseQueue();
