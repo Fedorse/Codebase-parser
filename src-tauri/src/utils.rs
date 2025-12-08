@@ -5,18 +5,21 @@ use dirs;
 use serde::{Deserialize, Serialize};
 use serde_json::json;
 use std::{
+    collections::HashSet,
     fs::{self, File},
     io::{self, Read, Write},
     path::{Path, PathBuf},
     process::Command,
 };
 use tauri::{AppHandle, Emitter};
+use uuid::Uuid;
 
 pub const APP_NAME: &str = "parser-ai";
 pub const PARSED_FILES_DIR: &str = "parsed-files";
 pub const CONTENT_FILENAME: &str = "content.txt";
 pub const METADATA_FILENAME: &str = "metadata.json";
 pub const TREE_FILENAME: &str = "tree.json";
+pub const TEMP_REPOS_DIR: &str = "temp-repos";
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct FileMetadata {
@@ -34,15 +37,7 @@ pub struct ParseMetadata {
     pub updated_at: DateTime<Local>,
     pub files_count: usize,
     pub total_size: u64,
-}
-
-impl ParsedPath {
-    pub fn path(&self) -> &str {
-        match self {
-            ParsedPath::File { path, .. } => path,
-            ParsedPath::Directory { path, .. } => path,
-        }
-    }
+    pub remote_url: String,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -61,10 +56,156 @@ pub enum ParsedPath {
     },
 }
 
-pub fn parse_files(paths: Vec<String>, app: AppHandle) -> Result<ParseMetadata> {
-    let (parse_dir, mut output_file, parse_id) = create_parse_directory()?;
-    let total_files = count_text_files(&paths)?;
+impl ParsedPath {
+    pub fn path(&self) -> &str {
+        match self {
+            ParsedPath::File { path, .. } => path,
+            ParsedPath::Directory { path, .. } => path,
+        }
+    }
+}
 
+// /////////////////////////////////////////////////////////////////////////////
+// App Initialization & Directories
+// /////////////////////////////////////////////////////////////////////////////
+
+pub fn init_app_structure() -> Result<()> {
+    let app_dir = get_app_dir()?;
+    if !app_dir.exists() {
+        fs::create_dir(&app_dir)?;
+    }
+    let parsed_dir = app_dir.join(PARSED_FILES_DIR);
+    if !parsed_dir.exists() {
+        fs::create_dir(&parsed_dir)?;
+    }
+    Ok(())
+}
+
+pub fn get_app_dir() -> Result<PathBuf> {
+    Ok(dirs::home_dir()
+        .ok_or(anyhow::anyhow!("No home dir"))?
+        .join(APP_NAME))
+}
+
+pub fn get_parse_dir(dir_name: &str) -> Result<PathBuf> {
+    Ok(get_app_dir()?.join(PARSED_FILES_DIR).join(dir_name))
+}
+
+pub fn get_content_path(parse_dir: &Path) -> PathBuf {
+    parse_dir.join(CONTENT_FILENAME)
+}
+
+pub fn get_metadata_path(parse_dir: &Path) -> PathBuf {
+    parse_dir.join(METADATA_FILENAME)
+}
+
+fn create_parse_directory(remote_url: &str) -> Result<(PathBuf, File, String)> {
+    let timestamp = Local::now().format("%Y-%m-%d_%H-%M-%S").to_string();
+
+    let parse_id = if !remote_url.is_empty() {
+        let safe_name = sanitize_repo_url(remote_url);
+        format!("{}_{}", safe_name, timestamp)
+    } else {
+        timestamp
+    };
+
+    let parse_dir = get_app_dir()?.join(PARSED_FILES_DIR).join(&parse_id);
+    fs::create_dir_all(&parse_dir)?;
+
+    let content_path = parse_dir.join(CONTENT_FILENAME);
+    let content_file = File::create(&content_path)?;
+    Ok((parse_dir, content_file, parse_id))
+}
+
+// /////////////////////////////////////////////////////////////////////////////
+// Git & Remote Handling
+// /////////////////////////////////////////////////////////////////////////////
+
+pub fn clone_git_repo(url: &str) -> Result<PathBuf> {
+    let app_dir = get_app_dir()?;
+    let temp_dir = app_dir.join(TEMP_REPOS_DIR);
+    if !temp_dir.exists() {
+        fs::create_dir_all(&temp_dir)?;
+    }
+
+    let folder_name = format!("{}_{}", Uuid::new_v4(), "repo");
+    let target_path = temp_dir.join(&folder_name);
+
+    let status = Command::new("git")
+        .args(["clone", "--depth", "1", url, target_path.to_str().unwrap()])
+        .status()
+        .map_err(|e| anyhow::anyhow!("Failed to execute git clone: {}", e))?;
+
+    if !status.success() {
+        return Err(anyhow::anyhow!("Git clone failed"));
+    }
+
+    Ok(target_path)
+}
+
+fn sanitize_repo_url(input: &str) -> String {
+    let clean_url = input
+        .trim_start_matches("https://")
+        .trim_start_matches("http://");
+
+    let sanitized: String = clean_url.chars()
+        .map(|c| {
+            if c.is_alphanumeric() || c == '-' || c == '_' {
+                c
+            } else {
+                '_'
+            }
+        })
+        .collect();
+
+    if sanitized.chars().count() > 80 {
+        sanitized.chars().take(80).collect()
+    } else {
+        sanitized
+    }
+}
+
+fn cleanup_temp_repos(paths: &[String]) -> Result<()> {
+    let app_dir = get_app_dir()?;
+    let temp_repos_root = app_dir.join(TEMP_REPOS_DIR);
+
+    if !temp_repos_root.exists() {
+        return Ok(());
+    }
+
+    let mut roots_to_delete = HashSet::new();
+
+    for path_str in paths {
+        let path = Path::new(path_str);
+
+        if let Ok(stripped) = path.strip_prefix(&temp_repos_root) {
+            if let Some(first_component) = stripped.components().next() {
+                let repo_root = temp_repos_root.join(first_component.as_os_str());
+                if repo_root.exists() {
+                    roots_to_delete.insert(repo_root);
+                }
+            }
+        }
+    }
+
+    for root in roots_to_delete {
+        if let Err(e) = fs::remove_dir_all(&root) {
+            eprintln!("Failed to remove temp repo {:?}: {}", root, e);
+        }
+    }
+
+    Ok(())
+}
+
+// /////////////////////////////////////////////////////////////////////////////
+// Main Parsing Logic
+// /////////////////////////////////////////////////////////////////////////////
+
+pub fn parse_files(paths: Vec<String>, app: AppHandle, remote_url: Option<String>) -> Result<ParseMetadata> {
+    let remote_url_str = remote_url.unwrap_or_default();
+    let (parse_dir, mut output_file, parse_id) = create_parse_directory(&remote_url_str)?;
+
+    let total_files = count_text_files(&paths)?;
     emit_progress(&app, &parse_id, 0, total_files, None);
 
     let mut parsed_files = Vec::new();
@@ -75,19 +216,14 @@ pub fn parse_files(paths: Vec<String>, app: AppHandle) -> Result<ParseMetadata> 
     for path_str in &paths {
         let path = Path::new(path_str);
         if path.exists() {
-            if path.is_symlink() {
-                continue;
-            }
+            if path.is_symlink() { continue; }
             file_tree.push(build_file_tree(&path)?);
         }
     }
 
-    for path_str in paths {
+    for path_str in &paths {
         let path = Path::new(&path_str);
-
-        if path.is_symlink() {
-            continue;
-        }
+        if path.is_symlink() { continue; }
 
         if path.is_dir() {
             process_directory_with_progress(
@@ -106,12 +242,15 @@ pub fn parse_files(paths: Vec<String>, app: AppHandle) -> Result<ParseMetadata> 
         }
     }
 
+    cleanup_temp_repos(&paths)?;
+
     let now = Local::now();
 
     let metadata = ParseMetadata {
         id: parse_id.clone(),
         name: parse_id.clone(),
         path: parse_dir.to_string_lossy().to_string(),
+        remote_url: remote_url_str,
         created_at: now,
         updated_at: now,
         files_count: parsed_files.len(),
@@ -136,33 +275,6 @@ pub fn parse_files(paths: Vec<String>, app: AppHandle) -> Result<ParseMetadata> 
     );
 
     Ok(metadata)
-}
-
-fn process_single_text_file(
-    path: &Path,
-    output_file: &mut File,
-    parsed_files: &mut Vec<FileMetadata>,
-    total_size: &mut u64,
-) -> Result<bool> {
-    if !is_text_file(path) {
-        return Ok(false);
-    }
-
-    match write_file_content(path, output_file) {
-        Ok(_) => {
-            if let Ok(metadata) = get_file_metadata(path) {
-                *total_size += metadata.size;
-                parsed_files.push(metadata);
-                Ok(true)
-            } else {
-                Ok(false)
-            }
-        }
-        Err(e) => {
-            eprintln!("Skipping file due to read/write error: {:?} - {}", path, e);
-            Ok(false)
-        }
-    }
 }
 
 fn process_directory_with_progress(
@@ -209,53 +321,38 @@ fn process_directory_with_progress(
     Ok(())
 }
 
-fn is_text_file(path: &Path) -> bool {
-    if !path.is_file() {
-        return false;
+fn process_single_text_file(
+    path: &Path,
+    output_file: &mut File,
+    parsed_files: &mut Vec<FileMetadata>,
+    total_size: &mut u64,
+) -> Result<bool> {
+    if !is_text_file(path) {
+        return Ok(false);
     }
 
-    let mut file = match File::open(path) {
-        Ok(f) => f,
-        Err(_) => return false,
-    };
-
-    let mut buf = [0u8; 8192];
-    let sample_len = match file.read(&mut buf) {
-        Ok(len) => len,
-        Err(_) => return false,
-    };
-
-    if sample_len == 0 {
-        return true;
+    match write_file_content(path, output_file) {
+        Ok(_) => {
+            if let Ok(metadata) = get_file_metadata(path) {
+                *total_size += metadata.size;
+                parsed_files.push(metadata);
+                Ok(true)
+            } else {
+                Ok(false)
+            }
+        }
+        Err(e) => {
+            eprintln!("Skipping file due to read/write error: {:?} - {}", path, e);
+            Ok(false)
+        }
     }
-
-    !matches!(inspect(&buf[..sample_len]), ContentType::BINARY)
 }
 
-fn write_file_content(path: &Path, output_file: &mut File) -> Result<()> {
-    let mut file = File::open(&path).with_context(|| format!("Opening {}", path.display()))?;
+// /////////////////////////////////////////////////////////////////////////////
+// File System & Tree Building
+// /////////////////////////////////////////////////////////////////////////////
 
-    writeln!(output_file, "===== {} =====", path.display())?;
-    io::copy(&mut file, output_file)?;
-    writeln!(output_file)?;
-
-    Ok(())
-}
-
-fn get_file_metadata(path: &Path) -> Result<FileMetadata> {
-    let metadata = fs::metadata(path)?;
-    Ok(FileMetadata {
-        path: path.to_string_lossy().to_string(),
-        name: path
-            .file_name()
-            .ok_or(anyhow::anyhow!("Failed to extract filename"))?
-            .to_string_lossy()
-            .to_string(),
-        size: metadata.len(),
-    })
-}
-
-pub fn build_file_tree(path: &Path) -> Result<ParsedPath> {
+fn build_file_tree(path: &Path) -> Result<ParsedPath> {
     let name = path
         .file_name()
         .ok_or(anyhow::anyhow!("Failed to extract filename"))?
@@ -301,7 +398,6 @@ pub fn build_file_tree(path: &Path) -> Result<ParsedPath> {
     }
 }
 
-/////
 pub fn build_file_tree_shallow(path: &Path) -> Result<ParsedPath> {
     let name = path
         .file_name()
@@ -380,8 +476,55 @@ pub fn create_shallow_node(path: &Path) -> Result<ParsedPath> {
     }
 }
 
+pub fn find_children_in_tree(tree: &[ParsedPath], target_path: &str) -> Option<Vec<ParsedPath>> {
+    for node in tree {
+        if node.path() == target_path {
+            if let ParsedPath::Directory { children, .. } = node {
+                return Some(children.iter().map(to_shallow_node).collect());
+            }
+        }
 
-////
+        if let ParsedPath::Directory { children, .. } = node {
+            if let Some(result) = find_children_in_tree(children, target_path) {
+                return Some(result);
+            }
+        }
+    }
+    None
+}
+
+pub fn to_shallow_node(node: &ParsedPath) -> ParsedPath {
+    match node {
+        ParsedPath::File { .. } => node.clone(),
+        ParsedPath::Directory { name, path, size, .. } => ParsedPath::Directory {
+            name: name.clone(),
+            path: path.clone(),
+            size: *size,
+            children: Vec::new(),
+        },
+    }
+}
+
+// /////////////////////////////////////////////////////////////////////////////
+// IO & Content Management
+// /////////////////////////////////////////////////////////////////////////////
+
+pub fn load_metadata(parse_dir: &Path) -> Result<ParseMetadata> {
+    let path = parse_dir.join(METADATA_FILENAME);
+    let file = File::open(path)?;
+    Ok(serde_json::from_reader(io::BufReader::new(file))?)
+}
+
+pub fn load_tree(parse_dir: &Path) -> Result<Vec<ParsedPath>> {
+    let path = parse_dir.join(TREE_FILENAME);
+    let file = File::open(path)?;
+    Ok(serde_json::from_reader(io::BufReader::new(file))?)
+}
+
+pub fn load_content(parse_dir: &Path) -> Result<String> {
+    Ok(fs::read_to_string(get_content_path(parse_dir))?)
+}
+
 pub fn update_content(parse_dir: &Path, content: &str) -> Result<()> {
     let content_path = get_content_path(parse_dir);
     let mut file = File::create(content_path)?;
@@ -393,6 +536,73 @@ pub fn update_content(parse_dir: &Path, content: &str) -> Result<()> {
 
     Ok(())
 }
+
+pub fn save_metadata(path: &Path, metadata: &ParseMetadata) -> Result<()> {
+    let file = File::create(path)?;
+    let writer = io::BufWriter::new(file);
+    serde_json::to_writer_pretty(writer, metadata)?;
+    Ok(())
+}
+
+fn write_file_content(path: &Path, output_file: &mut File) -> Result<()> {
+    let mut file = File::open(&path).with_context(|| format!("Opening {}", path.display()))?;
+
+    writeln!(output_file, "===== {} =====", path.display())?;
+    io::copy(&mut file, output_file)?;
+    writeln!(output_file)?;
+
+    Ok(())
+}
+
+// /////////////////////////////////////////////////////////////////////////////
+// System Actions (Open, Reveal)
+// /////////////////////////////////////////////////////////////////////////////
+
+pub enum OpenAction {
+    OpenFile(PathBuf),
+    RevealInFolder(PathBuf),
+}
+
+pub fn open_with_default_app(action: OpenAction) -> Result<()> {
+    match action {
+        OpenAction::OpenFile(p) => {
+            open::that(p)?;
+            Ok(())
+        }
+        OpenAction::RevealInFolder(p) => reveal_in_folder(&p),
+    }
+}
+
+fn reveal_in_folder(path: &Path) -> Result<()> {
+    #[cfg(target_os = "macos")]
+    {
+        Command::new("open")
+            .args(["-R", &path.to_string_lossy()])
+            .spawn()?;
+    }
+    #[cfg(target_os = "windows")]
+    {
+        Command::new("explorer")
+            .arg("/select,")
+            .arg(path)
+            .spawn()?;
+    }
+
+    #[cfg(target_os = "linux")]
+    {
+        if let Some(parent) = path.parent() {
+            Command::new("xdg-open")
+                .arg(parent)
+                .spawn()?;
+        }
+    }
+
+    Ok(())
+}
+
+// /////////////////////////////////////////////////////////////////////////////
+// Helper Utils (Private)
+// /////////////////////////////////////////////////////////////////////////////
 
 fn emit_progress(
     app: &AppHandle,
@@ -445,134 +655,38 @@ fn count_text_files_in_dir(dir: &Path) -> Result<usize> {
     Ok(count)
 }
 
-pub fn save_metadata(path: &Path, metadata: &ParseMetadata) -> Result<()> {
-    let file = File::create(path)?;
-    let writer = io::BufWriter::new(file);
-    serde_json::to_writer_pretty(writer, metadata)?;
-    Ok(())
-}
-
-fn create_parse_directory() -> Result<(PathBuf, File, String)> {
-    let timestamp = Local::now().format("%Y-%m-%d_%H-%M-%S").to_string();
-    let parse_dir = get_app_dir()?.join(PARSED_FILES_DIR).join(&timestamp);
-    fs::create_dir_all(&parse_dir)?;
-    let content_path = parse_dir.join(CONTENT_FILENAME);
-    let content_file = File::create(&content_path)?;
-    Ok((parse_dir, content_file, timestamp))
-}
-
-pub fn get_content_path(parse_dir: &Path) -> PathBuf {
-    parse_dir.join(CONTENT_FILENAME)
-}
-pub fn get_metadata_path(parse_dir: &Path) -> PathBuf {
-    parse_dir.join(METADATA_FILENAME)
-}
-
-pub fn load_metadata(parse_dir: &Path) -> Result<ParseMetadata> {
-    let path = parse_dir.join(METADATA_FILENAME);
-    let file = File::open(path)?;
-    Ok(serde_json::from_reader(io::BufReader::new(file))?)
-}
-
-pub fn load_tree(parse_dir: &Path) -> Result<Vec<ParsedPath>> {
-    let path = parse_dir.join(TREE_FILENAME);
-    let file = File::open(path)?;
-    Ok(serde_json::from_reader(io::BufReader::new(file))?)
-}
-
-pub fn to_shallow_node(node: &ParsedPath) -> ParsedPath {
-    match node {
-        ParsedPath::File { .. } => node.clone(),
-        ParsedPath::Directory { name, path, size, .. } => ParsedPath::Directory {
-            name: name.clone(),
-            path: path.clone(),
-            size: *size,
-            children: Vec::new(),
-        },
-    }
-}
-
-pub fn find_children_in_tree(tree: &[ParsedPath], target_path: &str) -> Option<Vec<ParsedPath>> {
-    for node in tree {
-        if node.path() == target_path {
-            if let ParsedPath::Directory { children, .. } = node {
-                return Some(children.iter().map(to_shallow_node).collect());
-            }
-        }
-
-        if let ParsedPath::Directory { children, .. } = node {
-            if let Some(result) = find_children_in_tree(children, target_path) {
-                return Some(result);
-            }
-        }
-    }
-    None
-}
-
-pub fn load_content(parse_dir: &Path) -> Result<String> {
-    Ok(fs::read_to_string(get_content_path(parse_dir))?)
-}
-
-pub fn init_app_structure() -> Result<()> {
-    let app_dir = get_app_dir()?;
-    if !app_dir.exists() {
-        fs::create_dir(&app_dir)?;
-    }
-    let parsed_dir = app_dir.join(PARSED_FILES_DIR);
-    if !parsed_dir.exists() {
-        fs::create_dir(&parsed_dir)?;
-    }
-    Ok(())
-}
-
-pub fn get_app_dir() -> Result<PathBuf> {
-    Ok(dirs::home_dir()
-        .ok_or(anyhow::anyhow!("No home dir"))?
-        .join(APP_NAME))
-}
-
-pub fn get_parse_dir(dir_name: &str) -> Result<PathBuf> {
-    Ok(get_app_dir()?.join(PARSED_FILES_DIR).join(dir_name))
-}
-
-pub enum OpenAction {
-    OpenFile(PathBuf),
-    RevealInFolder(PathBuf),
-}
-
-pub fn open_with_default_app(action: OpenAction) -> Result<()> {
-    match action {
-        OpenAction::OpenFile(p) => {
-            open::that(p)?;
-            Ok(())
-        }
-        OpenAction::RevealInFolder(p) => reveal_in_folder(&p),
-    }
-}
-
-fn reveal_in_folder(path: &Path) -> Result<()> {
-    #[cfg(target_os = "macos")]
-    {
-        Command::new("open")
-            .args(["-R", &path.to_string_lossy()])
-            .spawn()?;
-    }
-    #[cfg(target_os = "windows")]
-    {
-        Command::new("explorer")
-            .arg("/select,")
-            .arg(path)
-            .spawn()?;
+fn is_text_file(path: &Path) -> bool {
+    if !path.is_file() {
+        return false;
     }
 
-    #[cfg(target_os = "linux")]
-    {
-        if let Some(parent) = path.parent() {
-            Command::new("xdg-open")
-                .arg(parent)
-                .spawn()?;
-        }
+    let mut file = match File::open(path) {
+        Ok(f) => f,
+        Err(_) => return false,
+    };
+
+    let mut buf = [0u8; 8192];
+    let sample_len = match file.read(&mut buf) {
+        Ok(len) => len,
+        Err(_) => return false,
+    };
+
+    if sample_len == 0 {
+        return true;
     }
 
-    Ok(())
+    !matches!(inspect(&buf[..sample_len]), ContentType::BINARY)
+}
+
+fn get_file_metadata(path: &Path) -> Result<FileMetadata> {
+    let metadata = fs::metadata(path)?;
+    Ok(FileMetadata {
+        path: path.to_string_lossy().to_string(),
+        name: path
+            .file_name()
+            .ok_or(anyhow::anyhow!("Failed to extract filename"))?
+            .to_string_lossy()
+            .to_string(),
+        size: metadata.len(),
+    })
 }
