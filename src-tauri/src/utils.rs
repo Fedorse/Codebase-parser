@@ -351,6 +351,27 @@ fn process_single_text_file(
 // /////////////////////////////////////////////////////////////////////////////
 // File System & Tree Building
 // /////////////////////////////////////////////////////////////////////////////
+fn get_recursive_dir_size(path: &Path) -> u64 {
+    let mut total_size = 0;
+    if let Ok(entries) = fs::read_dir(path) {
+        for entry in entries.flatten() {
+            let child_path = entry.path();
+
+            // Skip symlinks to avoid infinite loops
+            if child_path.is_symlink() {
+                continue;
+            }
+
+            if child_path.is_dir() {
+                total_size += get_recursive_dir_size(&child_path);
+            } else if let Ok(metadata) = fs::metadata(&child_path) {
+                total_size += metadata.len();
+            }
+        }
+    }
+    total_size
+}
+
 
 fn build_file_tree(path: &Path) -> Result<ParsedPath> {
     let name = path
@@ -419,8 +440,10 @@ pub fn build_file_tree_shallow(path: &Path) -> Result<ParsedPath> {
 
                 let child_node = create_shallow_node(&child_path)?;
 
-                if let ParsedPath::File { size, .. } = child_node {
-                    current_level_size += size;
+                match &child_node {
+                    ParsedPath::File { size, .. } | ParsedPath::Directory { size, .. } => {
+                        current_level_size += *size;
+                    }
                 }
 
                 children.push(child_node);
@@ -460,10 +483,12 @@ pub fn create_shallow_node(path: &Path) -> Result<ParsedPath> {
     let file_path = path.to_string_lossy().to_string();
 
     if path.is_dir() {
+        let size = get_recursive_dir_size(path);
+
         Ok(ParsedPath::Directory {
             name,
             path: file_path,
-            size: 0,
+            size,
             children: Vec::new(),
         })
     } else {
