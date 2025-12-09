@@ -45,6 +45,9 @@
       console.log('2. Selected Local Paths:', selected);
       // Shallow Load from OS
       const res = await invoke<ParsedPath[]>('get_preview_tree', { paths: selected });
+
+      console.log('PREVIEW TREE FIRST', res);
+
       previewTree = res;
     }
   }
@@ -84,6 +87,8 @@
 
     try {
       const children = await invoke<ParsedPath[]>('expand_folder', { path: node.path });
+      console.log('Children selected', children);
+
       node.children = children;
       node.isExpanded = true;
     } catch (e) {
@@ -139,6 +144,8 @@
       // Shallow load from JSON structure
       const res = await invoke<ParsedPath[]>('get_parsed_preview_tree', { dirName: id });
       parsedTree = res;
+
+      console.log('Parsed tree', res);
     } catch (e) {
       console.error(e);
     }
@@ -158,6 +165,8 @@
       });
       node.children = children;
       node.isExpanded = true;
+
+      console.log('CHILDREN AFTER', children);
     } catch (e) {
       console.error('Expand Error', e);
     }
