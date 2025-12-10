@@ -24,7 +24,7 @@
 <Sheet.Root bind:open={parseQueue.isSideBarOpen}>
   <Sheet.Content
     side="right"
-    class="flex w-[500px] flex-col rounded-tl-xl rounded-bl-xl sm:w-[450px] 2xl:w-[600px] "
+    class="flex w-[500px] flex-col overflow-y-auto rounded-tl-xl rounded-bl-xl sm:w-[450px] 2xl:w-[600px] "
   >
     <Sheet.Header class="border-b pt-6 pr-2 pl-8">
       <Sheet.Title class="text-lg">System Activity</Sheet.Title>

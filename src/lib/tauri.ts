@@ -26,8 +26,16 @@ export const expandNode = async (path: string): Promise<FileTree[]> => {
   }
 };
 
+export const expandParsedFolder = async (path: string, dirName: string) => {
+  const children = await invoke<FileTree[]>('expand_parsed_folder', {
+    dirName: dirName,
+    path: path
+  });
+  return children;
+};
+
 export const getFileTree = async (dirName: string): Promise<FileTree[]> => {
-  const tree = await invoke<FileTree[]>('get_file_tree', { dirName });
+  const tree = await invoke<FileTree[]>('get_parsed_preview_tree', { dirName });
   return tree;
 };
 

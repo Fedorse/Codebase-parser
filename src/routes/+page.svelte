@@ -21,6 +21,10 @@
 
   let filesTreeNodes = $state<FileTree[]>([]);
 
+  $effect(() => {
+    console.log('filesTreeNodes', filesTreeNodes);
+  });
+
   let isDialogOpen = $state(false);
   let isDragging = $state(false);
   let isLoadingPreview = $state(false);

@@ -1,12 +1,26 @@
 <script lang="ts">
-  import { FileIcon, FolderIcon, FolderOpen, ChevronRight } from '@lucide/svelte/icons';
+  import { FileIcon, FolderIcon, FolderOpen, ChevronRight, Loader } from '@lucide/svelte/icons';
   import { Checkbox } from '$lib/components/ui/checkbox';
   import { expandNode } from '@/lib/tauri';
   import type { FileTree } from '@/lib/type';
   import { slide } from 'svelte/transition';
   import { formatFileSize } from '../utils/utils';
 
+  const EXPAND_SIZE_LOADING = 150 * 1024 * 1024;
+
   let { nodes = $bindable() }: { nodes: FileTree[] } = $props();
+
+  let loadingPaths = $state(new Set<string>());
+
+  const calculateSelectedSize = (node: FileTree): number => {
+    if (node.type === 'File') {
+      return node.selected ? (node.size ?? 0) : 0;
+    }
+    if (!node.children || node.children.length === 0) {
+      return node.selected ? (node.size ?? 0) : 0;
+    }
+    return node.children.reduce((acc, child) => acc + calculateSelectedSize(child), 0);
+  };
 
   const handleSelect = (node: FileTree, checked: boolean) => {
     node.selected = checked;
@@ -27,6 +41,8 @@
     e.stopPropagation();
     if (node.type !== 'Directory') return;
 
+    if (loadingPaths.has(node.path)) return;
+
     if (node.isExpanded) {
       node.isExpanded = false;
       return;
@@ -36,13 +52,21 @@
       node.isExpanded = true;
       return;
     }
-
+    if (node.size && node.size > EXPAND_SIZE_LOADING) {
+      const nextLoading = new Set(loadingPaths);
+      nextLoading.add(node.path);
+      loadingPaths = nextLoading;
+    }
     try {
       const loadedChildren = await expandNode(node.path);
       node.children = loadedChildren;
       node.isExpanded = true;
     } catch (err) {
       console.error(err);
+    } finally {
+      const finishedLoading = new Set(loadingPaths);
+      finishedLoading.delete(node.path);
+      loadingPaths = finishedLoading;
     }
   };
 </script>
@@ -54,20 +78,29 @@
 </ul>
 
 {#snippet treeNode(node: FileTree)}
+  {@const isLoading = loadingPaths.has(node.path)}
+  {@const selectedSize = calculateSelectedSize(node)}
+
   <li class="flex flex-col text-sm select-none">
     <div
       class="hover:bg-muted/50 group flex items-center gap-2 rounded-sm px-1 py-1 transition-colors"
     >
       <div class="flex size-5 items-center justify-center">
         {#if node.type === 'Directory'}
-          <button
-            onclick={(e) => handleExpand(e, node)}
-            class="hover:bg-muted-foreground/20 cursor-pointer rounded p-0.5"
-          >
-            <ChevronRight
-              class="size-4 transition-transform duration-200 {node.isExpanded ? 'rotate-90' : ''}"
-            />
-          </button>
+          {#if isLoading}
+            <Loader class="text-muted-foreground size-4 animate-spin" />
+          {:else}
+            <button
+              onclick={(e) => handleExpand(e, node)}
+              class="hover:bg-muted-foreground/20 cursor-pointer rounded p-0.5"
+            >
+              <ChevronRight
+                class="size-4 transition-transform duration-200 {node.isExpanded
+                  ? 'rotate-90'
+                  : ''}"
+              />
+            </button>
+          {/if}
         {:else}
           <span class="w-4"></span>
         {/if}
@@ -84,27 +117,35 @@
       >
         {#if node.type === 'Directory'}
           {#if node.isExpanded}
-            <FolderOpen class="text-primary/80 size-4" />
+            <FolderOpen
+              class="size-4 {node.selected ? 'text-primary/80' : 'text-muted-foreground/50'}"
+            />
           {:else}
             <FolderIcon
-              class="text-muted-foreground group-hover:text-primary/80 size-4 transition-colors"
+              class="size-4 transition-colors {node.selected
+                ? 'text-foreground'
+                : 'text-muted-foreground/50'}"
             />
           {/if}
         {:else}
-          <FileIcon class="text-muted-foreground/70 size-4" />
+          <FileIcon
+            class=" size-4 {node.selected ? 'text-foreground' : 'text-muted-foreground/50'}"
+          />
         {/if}
-        <div class="flex w-full justify-between">
+        <div class="flex w-full items-center justify-between">
           <span
             class="truncate {node.selected
               ? 'text-foreground font-medium'
-              : 'text-muted-foreground'}"
+              : 'text-muted-foreground/50'}"
           >
             {node.name}
           </span>
 
-          <span class="ml-2 pr-4 text-xs opacity-70">
-            {formatFileSize(node.size ?? 0)}
-          </span>
+          {#if selectedSize}
+            <span class="text-muted-foreground ml-2 pr-4 text-xs opacity-70">
+              {formatFileSize(selectedSize)}
+            </span>
+          {/if}
         </div>
       </div>
     </div>

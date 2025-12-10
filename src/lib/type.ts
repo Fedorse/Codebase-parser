@@ -54,4 +54,5 @@ export type GraphData = {
   dir: Direction;
   openEditor?: (path: string) => void;
   largeFile?: boolean;
+  loading?: boolean;
 };
