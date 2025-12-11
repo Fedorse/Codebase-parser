@@ -44,8 +44,8 @@ export const getSavedFiles = async (limit?: number): Promise<File[]> => {
   return files;
 };
 
-export const parseNodes = async (paths: string[]): Promise<void> => {
-  await invoke('parse', { paths, app: null, remoteUrl: null });
+export const parseNodes = async (paths: string[], remoteUrl?: string): Promise<void> => {
+  await invoke('parse', { paths, app: null, remoteUrl: remoteUrl ?? null });
 };
 
 export const deleteFile = async (file: File): Promise<void> => {
@@ -94,4 +94,8 @@ export const getFileDetail = async (fileId: string): Promise<FileMetadata | null
 export const getFileMetadata = async (dirName: string): Promise<FileMetadata | null> => {
   const metadata = await invoke<FileMetadata>('get_file_metadata', { dirName });
   return metadata;
+};
+
+export const parseGitRepo = async (repoUrl: string): Promise<string> => {
+  return await invoke<string>('parse_repository', { url: repoUrl });
 };

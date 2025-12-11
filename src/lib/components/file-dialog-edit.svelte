@@ -65,6 +65,11 @@
   let inputEl = $state<HTMLInputElement | null>(null);
 
   const isTainted = $derived(value !== snapshot);
+
+  $effect(() => {
+    console.log('isTainted', isTainted);
+  });
+
   const isLargeFile = $derived(file ? file.total_size > THIRTY_MB_SIZE : false);
 
   const saveContent = async () => {

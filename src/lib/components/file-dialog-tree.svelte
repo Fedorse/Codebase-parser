@@ -58,7 +58,7 @@
       </div>
       <div class="flex gap-3">
         <Button variant="outline" onclick={() => (open = false)}>Cancel</Button>
-        <Button onclick={onParse} disabled={totalSize === 0}>Start Parsing</Button>
+        <Button onclick={onParse} disabled={totalSize === 0}>Parsing</Button>
       </div>
     </div></Dialog.Content
   >

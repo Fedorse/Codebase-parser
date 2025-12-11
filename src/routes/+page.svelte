@@ -1,33 +1,59 @@
 <script lang="ts">
   import { open } from '@tauri-apps/plugin-dialog';
+  import { z } from 'zod';
   import { getCurrentWebview } from '@tauri-apps/api/webview';
   import { uniq } from 'es-toolkit';
   import { onDestroy, onMount } from 'svelte';
+  import { invalidate } from '$app/navigation';
   import { toast } from 'svelte-sonner';
-  // import { collectSelectedPath, parsePaths, getPreviewTreeUI } from '$lib/tauri';
   import FileDialogTree from '$lib/components/file-dialog-tree.svelte';
   import * as Card from '$lib/components/ui/card';
   import RecentFiles from '$lib/components/collaps-files.svelte';
   import { Button } from '$lib/components/ui/button/index';
-  import { Folder, FolderOpen } from '@lucide/svelte';
+  import { Folder, FolderOpen, Github, InfoIcon, Link2Icon } from '@lucide/svelte';
   import CubeLoader from '@/lib/components/cube-loader.svelte';
   import { parseQueue } from '@/lib/state-utils/store-parse-queue.svelte';
-  import { getPreviewTreeNodes, parseNodes } from '@/lib/tauri';
+  import { getPreviewTreeNodes, parseNodes, parseGitRepo } from '@/lib/tauri';
   import { collectSelectedPathsRecursive } from '@/lib/utils/utils';
+  import * as ButtonGroup from '$lib/components/ui/button-group/index.js';
+  import * as InputGroup from '$lib/components/ui/input-group/index.js';
+  import * as Tooltip from '$lib/components/ui/tooltip/index.js';
 
   import type { FileTree, DragEventPayload } from '$lib/type';
+  import Separator from '@/lib/components/ui/separator/separator.svelte';
+
+  const gitRepoSchema = z
+    .string()
+    .trim()
+    .min(1, 'URL cannot be empty')
+    .url({ message: 'Invalid URL format' })
+    .startsWith('https://', 'URL must start with https://')
+    .refine((url) => {
+      try {
+        const { pathname } = new URL(url);
+        const segments = pathname.split('/').filter(Boolean);
+        return segments.length >= 2;
+      } catch {
+        return false;
+      }
+    }, 'Incomplete repository path. Example: https://github.com/user/repo')
+
+    .refine(
+      (url) => !/\/blob\/|\/tree\/|\/commit\//.test(url),
+      'Please provide the root repository URL (remove /tree/, /blob/, etc.)'
+    )
+
+    .refine((url) => !/\.(zip|tar|gz|rar|7z)$/i.test(url), 'Cannot clone archive files directly');
 
   let { data } = $props();
 
   let filesTreeNodes = $state<FileTree[]>([]);
 
-  $effect(() => {
-    console.log('filesTreeNodes', filesTreeNodes);
-  });
-
   let isDialogOpen = $state(false);
   let isDragging = $state(false);
   let isLoadingPreview = $state(false);
+  let repoUrl = $state('');
+  let isCloning = $state(false);
 
   let unlistenDrag: () => void;
 
@@ -59,6 +85,7 @@
     try {
       parseQueue.addPendingRequest();
       await parseNodes(paths);
+      invalidate('app:recent-files');
     } catch (err) {
       console.error(err);
       toast.error('Parse failed');
@@ -79,6 +106,36 @@
       toast.error('Failed to open selected file');
     } finally {
       isLoadingPreview = false;
+    }
+  };
+
+  const handleCloneRepo = async () => {
+    const inputRaw = repoUrl.trim();
+    if (!inputRaw) return;
+
+    const result = gitRepoSchema.safeParse(inputRaw);
+
+    if (!result.success) {
+      toast.error(result.error.issues[0]?.message ?? 'Invalid URL');
+      return;
+    }
+    const validUrl = result.data;
+
+    isCloning = true;
+    isLoadingPreview = true;
+    try {
+      const tempPath = await parseGitRepo(validUrl);
+
+      const res = await getPreviewTreeNodes([tempPath]);
+      isDialogOpen = true;
+      filesTreeNodes = res;
+      repoUrl = '';
+    } catch (e) {
+      console.error('Clone failed:', e);
+      toast.error('Repository not found or invalid URL');
+    } finally {
+      isLoadingPreview = false;
+      isCloning = false;
     }
   };
 
@@ -143,7 +200,7 @@
         </Button>
       </div>
     </Card.Header>
-    <Card.Content class="py-4">
+    <Card.Content class="pt-4 pb-0">
       <div
         class={{
           'h-48 w-full rounded-2xl border  border-dashed text-center transition-all ': true,
@@ -174,6 +231,7 @@
           {/if}
         </div>
       </div>
+      {@render gitHub()}
     </Card.Content>
 
     <div class="border-border border-t px-6 pt-4">
@@ -190,6 +248,60 @@
   {/if}
 </main>
 
+{#snippet gitHub()}
+  <div class="flex items-center gap-4 py-6">
+    <Separator class="flex-1 opacity-50" />
+    <span class="text-muted-foreground text-[10px] tracking-widest opacity-70">
+      OR Import from Git
+    </span>
+    <Separator class="flex-1 opacity-50" />
+  </div>
+  <ButtonGroup.Root class="w-full">
+    <InputGroup.Root
+      class=" bg-transparent!
+                    transition-colors
+                    focus-within:border-blue-900
+                    focus-within:ring-0!
+                    focus-within:ring-offset-0!
+                    hover:border-blue-900!"
+    >
+      <InputGroup.Addon>
+        <Tooltip.Root delayDuration={300}>
+          <Tooltip.Trigger>
+            {#snippet child({ props })}
+              <InputGroup.Button {...props} class="rounded-full" size="icon-xs">
+                <InfoIcon />
+              </InputGroup.Button>
+            {/snippet}
+          </Tooltip.Trigger>
+          <Tooltip.Content>
+            Supports GitHub, GitLab, and standard .git repositories.
+          </Tooltip.Content>
+        </Tooltip.Root>
+      </InputGroup.Addon>
+      <InputGroup.Input
+        id="repo-url"
+        bind:value={repoUrl}
+        placeholder="https://github.com/user/repo"
+        class=" placeholder:text-muted-foreground/50 shadow-none! focus-visible:ring-0! focus-visible:outline-none"
+      />
+    </InputGroup.Root>
+
+    <Button
+      variant="outline"
+      aria-label="Clone"
+      onclick={handleCloneRepo}
+      disabled={!repoUrl || isLoadingPreview}
+    >
+      Clone
+      <Link2Icon class="size-3.5 stroke-1" />
+    </Button>
+  </ButtonGroup.Root>
+  <!-- <Label.Root for="repo-url" class="text-muted-foreground text-xs font-medium">
+        Supports GitHub, GitLab, and standard .git repositories.
+      </Label.Root> -->
+{/snippet}
+
 {#snippet loadingTree()}
   <div
     class="animate-in fade-in zoom-in-95 flex h-full w-full flex-col items-center justify-center py-6 duration-300"
@@ -198,10 +310,10 @@
 
     <div class="flex flex-col items-center gap-1 pt-6 text-center">
       <h3 class="text-foreground text-sm font-semibold tracking-tight">
-        Scanning Directory Structure...
+        {isCloning ? 'Cloning Repository...' : 'Scanning Directory Structure...'}
       </h3>
       <p class="text-muted-foreground max-w-[260px] text-xs">
-        Large directories may take a moment.
+        {isCloning ? 'Fetching data from remote source.' : 'Large directories may take a moment.'}
       </p>
     </div>
   </div>
