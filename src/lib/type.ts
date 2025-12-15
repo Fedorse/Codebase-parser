@@ -5,9 +5,9 @@ export type FileTree = {
   path: string;
   type: NodeType;
   selected?: boolean;
+  isExpanded: boolean;
   children?: FileTree[];
   size?: number;
-  lastModified?: string;
 };
 
 export type FileMetadata = {
@@ -54,4 +54,5 @@ export type GraphData = {
   dir: Direction;
   openEditor?: (path: string) => void;
   largeFile?: boolean;
+  loading?: boolean;
 };

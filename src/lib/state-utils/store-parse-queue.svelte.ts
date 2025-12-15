@@ -1,4 +1,3 @@
-import { invalidateAll } from '$app/navigation';
 import { listen, type UnlistenFn } from '@tauri-apps/api/event';
 import { toast } from 'svelte-sonner';
 
@@ -57,7 +56,7 @@ class ParseQueue {
 
         if (isComplete) {
           this.processedIds.add(id);
-          invalidateAll();
+
           if (!this.isSideBarOpen) toast.success(`Parsing completed`);
         }
       });

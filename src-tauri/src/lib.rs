@@ -17,16 +17,19 @@ pub fn run() {
         .plugin(tauri_plugin_log::Builder::new().build())
         .invoke_handler(tauri::generate_handler![
             commands::get_preview_tree,
+            commands::get_parsed_preview_tree,
             commands::parse,
+            commands::parse_repository,
             commands::get_files,
             commands::get_file_content,
             commands::get_file_metadata,
-            commands::get_file_tree,
             commands::update_file,
             commands::rename_file,
             commands::delete_file,
             commands::open_in_default_editor,
             commands::open_in_folder,
+            commands::expand_folder,
+            commands::expand_parsed_folder,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

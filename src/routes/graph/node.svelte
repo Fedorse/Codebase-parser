@@ -1,6 +1,6 @@
 <script lang="ts">
   import { Handle, Position } from '@xyflow/svelte';
-  import { Folder, File, ChevronRight, FolderOpen, SearchCode } from '@lucide/svelte';
+  import { Folder, File, ChevronRight, FolderOpen, SearchCode, Loader } from '@lucide/svelte';
   import * as Tooltip from '$lib/components/ui/tooltip/index.js';
 
   import type { GraphData } from '@/lib/type';
@@ -14,6 +14,7 @@
   const isDir = $derived(data?.type === 'Directory');
   const isOpen = $derived(Boolean(isDir && data?.open));
   const isHorizontal = $derived(data?.dir === 'LR');
+  const isLoading = $derived(data?.loading);
 </script>
 
 <div
@@ -29,14 +30,17 @@
     <div
       class={{
         'text-primary flex min-w-0 items-center gap-2 ': true,
-        'text-primary/20': isDir && !isOpen
+        'text-primary/20': isDir && !isOpen,
+        'pointer-events-none ': isLoading
       }}
       onclick={() => isDir && data.onToggle?.(data.path)}
     >
-      {#if !isOpen}
-        <Folder class="size-4 shrink-0" />
-      {:else if isOpen}
+      {#if isLoading}
+        <Loader class="size-4 shrink-0 animate-spin" />
+      {:else if isDir && isOpen}
         <FolderOpen class="size-4 shrink-0" />
+      {:else if isDir}
+        <Folder class="size-4 shrink-0" />
       {:else}
         <File class="size-4 shrink-0" />
       {/if}

@@ -1,6 +1,8 @@
 <script lang="ts">
   import { getCurrentWindow } from '@tauri-apps/api/window';
   import { asyncNoop } from 'es-toolkit';
+  import { onMount } from 'svelte';
+  import Dagre from '@dagrejs/dagre';
   import {
     SvelteFlow,
     Background,
@@ -14,9 +16,8 @@
     type DefaultEdgeOptions,
     ControlButton
   } from '@xyflow/svelte';
+  import { getFileTree, expandParsedFolder } from '$lib/tauri';
   import '@xyflow/svelte/dist/style.css';
-  import Dagre from '@dagrejs/dagre';
-  import { onMount } from 'svelte';
   import { pushState } from '$app/navigation';
   import { mode } from 'mode-watcher';
   import * as Tabs from '$lib/components/ui/tabs/index.js';
@@ -29,15 +30,17 @@
   const HEIGHT_NODE = 46;
   const THIRTY_MB_SIZE = 30 * 1024 * 1024;
 
-  type Props = { tree?: FileTree[]; fileId: string; metadata?: FileMetadata };
+  type Props = { fileId: string; metadata?: FileMetadata };
 
-  const { tree = [], fileId, metadata }: Props = $props();
+  const { fileId, metadata }: Props = $props();
   const isLargeFile = $derived(metadata ? metadata.total_size > THIRTY_MB_SIZE : false);
 
   const { fitView } = useSvelteFlow();
 
   let direction = $state<Direction>('TB');
   let expandedDirs = $state<Set<string>>(new Set());
+  let tree = $state<FileTree[]>([]);
+  let loadingDirs = $state<Set<string>>(new Set());
 
   const nodeTypes: NodeTypes = {
     fileNode: CustomNode
@@ -56,19 +59,57 @@
     }
   };
 
-  $effect.pre(() => {
-    const initialSet = new Set<string>();
-    for (const r of tree) {
-      if (r.type === 'Directory') initialSet.add(r.path);
-    }
-    expandedDirs = initialSet;
-  });
+  const findNode = (path: string) => {
+    const walk = (nodes: FileTree[]): FileTree | undefined => {
+      for (const n of nodes) {
+        if (n.path === path) return n;
+        if (n.children?.length) {
+          const found = walk(n.children);
+          if (found) return found;
+        }
+      }
+    };
+    return walk(tree);
+  };
 
-  const toggleDir = (path: string) => {
-    const next = expandedDirs;
-    next.has(path) ? next.delete(path) : next.add(path);
-    expandedDirs = next;
-    rebuildAndLayout();
+  const toggleDir = async (path: string) => {
+    const next = new Set(expandedDirs);
+    if (next.has(path)) {
+      next.delete(path);
+      expandedDirs = next;
+      rebuildAndLayout();
+      return;
+    }
+
+    const nextLoading = new Set(loadingDirs);
+    nextLoading.add(path);
+    loadingDirs = nextLoading;
+    nodes = nodes.map((node) => {
+      if (node.id === path) {
+        return {
+          ...node,
+          data: { ...node.data, loading: true }
+        };
+      }
+      return node;
+    });
+
+    try {
+      const dirNode = findNode(path);
+      if (dirNode && (!dirNode.children || dirNode.children.length === 0)) {
+        const children = await expandParsedFolder(path, fileId);
+        dirNode.children = children;
+      }
+      next.add(path);
+      expandedDirs = next;
+    } catch (e) {
+      console.error('expand error', e);
+    } finally {
+      const nextLoading = new Set(loadingDirs);
+      nextLoading.delete(path);
+      loadingDirs = nextLoading;
+      rebuildAndLayout();
+    }
   };
 
   const openInEditor = (path: string) => {
@@ -86,7 +127,8 @@
       open: file.type === 'Directory' ? expandedDirs.has(file.path) : undefined,
       dir: direction,
       openEditor: openInEditor,
-      largeFile: isLargeFile
+      largeFile: isLargeFile,
+      loading: file.type === 'Directory' ? loadingDirs.has(file.path) : false
     },
     position: { x: 0, y: 0 }
   });
@@ -161,11 +203,12 @@
     const { nodes: n, edges: e } = getLayoutedElements(outNodes, outEdges, { direction });
     nodes = n;
     edges = e;
+    fitView({ duration: 200 });
   };
 
   const toggleLayout = (dir: Direction) => {
     direction = dir;
-    fitView({ duration: 100 });
+    fitView({ duration: 120 });
     rebuildAndLayout();
   };
   const toggleFullscreen = async () => {
@@ -175,7 +218,11 @@
 
     fitView?.({ duration: 120 });
   };
-  onMount(rebuildAndLayout);
+  onMount(async () => {
+    const root = await getFileTree(fileId);
+    tree = root;
+    rebuildAndLayout();
+  });
 </script>
 
 <div class="h-full min-h-[450px] w-full">

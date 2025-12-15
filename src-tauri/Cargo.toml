@@ -39,3 +39,5 @@ content_inspector = "0.2"
 anyhow = "1"
 thiserror = "2" # bumped to major version 2 recently, check if your code matches
 log = "0.4"
+
+uuid = { version = "1", features = ["v4"] }
