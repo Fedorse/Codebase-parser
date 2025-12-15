@@ -314,17 +314,13 @@
 
   /* :global(.svelte-flow__pane) {
     cursor: default !important;
-  } */
+  }
 
-  /* :global(.svelte-flow__pane.dragging) {
+  :global(.svelte-flow__pane.dragging) {
     cursor: grabbing !important;
   }
 
   :global(.svelte-flow__node) {
     cursor: pointer !important;
   } */
-
-  :global(.svelte-flow__pane) {
-    cursor: grabbing !important;
-  }
 </style>
