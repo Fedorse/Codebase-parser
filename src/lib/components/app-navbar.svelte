@@ -1,7 +1,7 @@
 <script lang="ts">
   import { getCurrentWindow } from '@tauri-apps/api/window';
-  import { onMount } from 'svelte';
   import { type } from '@tauri-apps/plugin-os';
+  import { onMount } from 'svelte';
   import { page } from '$app/state';
   import { goto } from '$app/navigation';
   import ToggleThemeButton from '$lib/components/theme-switch-button.svelte';
@@ -21,6 +21,7 @@
   let isFullscreen = $state(false);
   let isMaximized = $state(false);
   let osType = $state<string | null>(null);
+
   const isMac = $derived(osType === 'macos');
 
   const appWindow = getCurrentWindow();
@@ -64,6 +65,7 @@
     let unlistenResize: () => void;
     const init = async () => {
       osType = await type();
+
       await checkStateScreen();
       unlistenResize = await appWindow.onResized(async () => {
         checkStateScreen();
@@ -81,7 +83,8 @@
   class={{
     'border-border bg-card/20 supports-[backdrop-filter]:bg-background/60 flex min-h-10 w-full items-center  justify-between border-b backdrop-blur select-none': true,
     'pl-18': !isFullscreen && isMac,
-    'pl-2': isFullscreen
+    'pl-2': isFullscreen,
+    'pr-3': isMac
   }}
   data-tauri-drag-region
 >

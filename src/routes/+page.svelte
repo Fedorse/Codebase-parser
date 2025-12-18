@@ -100,6 +100,10 @@
 
   const handleCloneRepo = async () => {
     repoError = null;
+    if (!navigator.onLine) {
+      repoError = 'No internet connection';
+      return;
+    }
     const inputRaw = repoUrl.trim();
     if (!inputRaw) return;
 
@@ -122,7 +126,6 @@
       repoUrl = '';
     } catch (e) {
       console.error('Clone failed:', e);
-      // toast.error('Repository not found or invalid URL');
       let errorMessage = '';
       if (typeof e === 'string') {
         errorMessage = e;
