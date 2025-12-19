@@ -19,11 +19,11 @@ Parse local projects or Git repositories into a clean output content.txt , keep 
   <tr>
     <td align="center">
       <b>Parsing local / remote repository</b><br/>
-      <img src="./demos/parse-demo.gif" width="420" />
+      <img src="./demo/parse-demo.gif" width="500" />
     </td>
     <td align="center">
       <b>Preview tree / navigation</b><br/>
-      <img src="./demos/navigate-demo.gif" width="420" />
+      <img src="./demo/navigate-demo.gif" width="500" />
     </td>
   </tr>
 </table>
