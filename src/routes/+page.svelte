@@ -1,5 +1,8 @@
 <script lang="ts">
   import { open } from '@tauri-apps/plugin-dialog';
+  import { TrayIcon } from '@tauri-apps/api/tray';
+  import { Menu } from '@tauri-apps/api/menu';
+  import { listen } from '@tauri-apps/api/event';
   import { getCurrentWebview } from '@tauri-apps/api/webview';
   import { uniq } from 'es-toolkit';
   import { onDestroy, onMount } from 'svelte';
@@ -158,11 +161,70 @@
 
   onMount(() => {
     initDragAndDrop();
+
+    // const menu = await Menu.new({
+    //   items: [
+    //     {
+    //       id: 'quit',
+    //       text: 'Quit',
+    //       action: () => {
+    //         console.log('quit pressed');
+    //       }
+    //     }
+    //   ]
+    // });
+
+    // const options = {
+    //   menu,
+    //   menuOnLeftClick: true
+    // };
+
+    // const tray = await TrayIcon.new(options);
+    const unlistenPromise = listen('tray-event', (event) => {
+      const action = event.payload;
+
+      if (action === 'open_local') {
+        activeTab = 'local';
+        // Small delay to ensure UI updates before opening dialog
+        setTimeout(() => handleOpenFiles(), 100);
+      } else if (action === 'open_github') {
+        activeTab = 'remote';
+        // Auto-focus the input
+        setTimeout(() => document.getElementById('repo-url')?.focus(), 100);
+      } else if (action === 'show_parsed') {
+        // Scroll to recent files or navigate
+        document.getElementById('recent-files-section')?.scrollIntoView({ behavior: 'smooth' });
+      }
+    });
+
+    return () => {
+      unlistenPromise.then((unlisten) => unlisten());
+    };
   });
 
   onDestroy(() => {
     if (unlistenDrag) unlistenDrag();
   });
+
+  ////
+  //   const menu = await Menu.new({
+  //     items: [
+  //       {
+  //         id: 'quit',
+  //         text: 'Quit',
+  //         action: () => {
+  //           console.log('quit pressed');
+  //         }
+  //       }
+  //     ]
+  //   });
+
+  //   const options = {
+  //     menu,
+  //     menuOnLeftClick: true
+  //   };
+
+  //   const tray = await TrayIcon.new(options);
 </script>
 
 <div
