@@ -5,7 +5,7 @@
   import { listen } from '@tauri-apps/api/event';
   import { getCurrentWebview } from '@tauri-apps/api/webview';
   import { uniq } from 'es-toolkit';
-  import { onDestroy, onMount } from 'svelte';
+  import { onDestroy, onMount, tick } from 'svelte';
   import { invalidate } from '$app/navigation';
   import { toast } from 'svelte-sonner';
   import { gitRepoSchema } from '$lib/shemas';
@@ -29,6 +29,7 @@
   import { collectSelectedPathsRecursive } from '@/lib/utils/utils';
   import * as InputGroup from '$lib/components/ui/input-group/index.js';
   import * as Tabs from '$lib/components/ui/tabs/index.js';
+  import * as Tooltip from '$lib/components/ui/tooltip/index.js';
 
   import type { FileTree, DragEventPayload } from '$lib/type';
 
@@ -102,6 +103,10 @@
 
   const handleCloneRepo = async () => {
     repoError = null;
+    if (!navigator.onLine) {
+      repoError = 'No internet connection';
+      return;
+    }
     const inputRaw = repoUrl.trim();
     if (!inputRaw) return;
 
@@ -124,7 +129,15 @@
       repoUrl = '';
     } catch (e) {
       console.error('Clone failed:', e);
-      toast.error('Repository not found or invalid URL');
+      let errorMessage = '';
+      if (typeof e === 'string') {
+        errorMessage = e;
+      } else if (e instanceof Error) {
+        errorMessage = e.message;
+      } else {
+        errorMessage = JSON.stringify(e, null, 2);
+      }
+      repoError = errorMessage;
     } finally {
       isLoadingPreview = false;
       isCloning = false;
@@ -180,7 +193,7 @@
     // };
 
     // const tray = await TrayIcon.new(options);
-    const unlistenPromise = listen('tray-event', (event) => {
+    const unlistenPromise = listen('tray-event', async (event) => {
       const action = event.payload;
 
       if (action === 'open_local') {
@@ -189,8 +202,12 @@
         setTimeout(() => handleOpenFiles(), 100);
       } else if (action === 'open_github') {
         activeTab = 'remote';
-        // Auto-focus the input
-        setTimeout(() => document.getElementById('repo-url')?.focus(), 100);
+        await tick();
+        const el = document.getElementById('repo-url');
+        el?.focus();
+        // UX: briefly change border color to show the user where to look
+        el?.classList.add('ring-2', 'ring-primary');
+        setTimeout(() => el?.classList.remove('ring-2', 'ring-primary'), 1000);
       } else if (action === 'show_parsed') {
         // Scroll to recent files or navigate
         document.getElementById('recent-files-section')?.scrollIntoView({ behavior: 'smooth' });
@@ -232,7 +249,7 @@
 "
 >
   <Tabs.Root bind:value={activeTab} class="flex w-full items-center">
-    <Card.Root class="bg-card/20 w-full max-w-5xl justify-between py-8" data-tauri-drag-region>
+    <Card.Root class="bg-card/20 w-full max-w-5xl justify-between py-8">
       <Card.Header class="flex justify-between">
         <div class="flex flex-col gap-2">
           <Card.Title>
@@ -293,7 +310,8 @@
       </div>
 
       <InputGroup.Root
-        class=" bg-transparent!
+        class="
+                      bg-transparent!
                       transition-colors
                       focus-within:border-blue-900
                       focus-within:ring-0!
@@ -394,7 +412,7 @@
 {/snippet}
 
 {#snippet controls()}
-  <div class="flex items-center gap-1 rounded-lg border p-1 shadow-sm">
+  <div class="flex items-center gap-1 rounded-lg border p-1 shadow-xs">
     <Button
       variant="ghost"
       size="sm"
@@ -408,15 +426,31 @@
     <div class="bg-border animate-in fade-in zoom-in-95 mx-1 h-4 w-[1px]"></div>
 
     <Tabs.List class="h-8 bg-transparent p-0">
-      <Tabs.Trigger
-        value="remote"
-        class="data-[state=active]:bg-background h-8 px-3 text-xs data-[state=active]:shadow-sm"
-      >
-        <Github class="start-1 size-4" />
-      </Tabs.Trigger>
-      <Tabs.Trigger value="local" class=" h-8 px-3 text-xs data-[state=active]:shadow-sm">
-        <HardDrive class="start-1 size-4" />
-      </Tabs.Trigger>
+      <Tooltip.Root>
+        <Tooltip.Trigger>
+          <Tabs.Trigger
+            value="remote"
+            class="data-[state=active]:bg-background h-8 px-3 text-xs data-[state=active]:shadow-sm"
+          >
+            <Github class="start-1 size-4" />
+          </Tabs.Trigger>
+        </Tooltip.Trigger>
+
+        <Tooltip.Content>Remote repository</Tooltip.Content>
+      </Tooltip.Root>
+      <Tooltip.Root>
+        <Tooltip.Trigger>
+          <Tabs.Trigger
+            value="local"
+            class=" h-8 px-3 text-xs data-[state=active]:shadow-sm"
+            title="System"
+          >
+            <HardDrive class="start-1 size-4" />
+          </Tabs.Trigger>
+        </Tooltip.Trigger>
+
+        <Tooltip.Content>System files</Tooltip.Content>
+      </Tooltip.Root>
     </Tabs.List>
   </div>
 {/snippet}

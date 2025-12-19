@@ -11,7 +11,9 @@ use std::{
     path::{Path, PathBuf},
     process::Command,
 };
-use tauri::{AppHandle, Emitter};
+use tauri::menu::{Menu, MenuItem, PredefinedMenuItem};
+use tauri::tray::{MouseButton, MouseButtonState, TrayIconBuilder, TrayIconEvent};
+use tauri::{App, Runtime, AppHandle, Emitter, Manager};
 use uuid::Uuid;
 
 pub const APP_NAME: &str = "parser-ai";
@@ -148,7 +150,8 @@ fn sanitize_repo_url(input: &str) -> String {
         .trim_start_matches("https://")
         .trim_start_matches("http://");
 
-    let sanitized: String = clean_url.chars()
+    let sanitized: String = clean_url
+        .chars()
         .map(|c| {
             if c.is_alphanumeric() || c == '-' || c == '_' {
                 c
@@ -201,7 +204,11 @@ fn cleanup_temp_repos(paths: &[String]) -> Result<()> {
 // Main Parsing Logic
 // /////////////////////////////////////////////////////////////////////////////
 
-pub fn parse_files(paths: Vec<String>, app: AppHandle, remote_url: Option<String>) -> Result<ParseMetadata> {
+pub fn parse_files(
+    paths: Vec<String>,
+    app: AppHandle,
+    remote_url: Option<String>,
+) -> Result<ParseMetadata> {
     let remote_url_str = remote_url.unwrap_or_default();
     let (parse_dir, mut output_file, parse_id) = create_parse_directory(&remote_url_str)?;
 
@@ -216,14 +223,18 @@ pub fn parse_files(paths: Vec<String>, app: AppHandle, remote_url: Option<String
     for path_str in &paths {
         let path = Path::new(path_str);
         if path.exists() {
-            if path.is_symlink() { continue; }
+            if path.is_symlink() {
+                continue;
+            }
             file_tree.push(build_file_tree(&path)?);
         }
     }
 
     for path_str in &paths {
         let path = Path::new(&path_str);
-        if path.is_symlink() { continue; }
+        if path.is_symlink() {
+            continue;
+        }
 
         if path.is_dir() {
             process_directory_with_progress(
@@ -236,7 +247,12 @@ pub fn parse_files(paths: Vec<String>, app: AppHandle, remote_url: Option<String
                 &app,
                 &parse_id,
             )?;
-        } else if process_single_text_file(&path, &mut output_file, &mut parsed_files, &mut total_size)? {
+        } else if process_single_text_file(
+            &path,
+            &mut output_file,
+            &mut parsed_files,
+            &mut total_size,
+        )? {
             current_count += 1;
             emit_progress(&app, &parse_id, current_count, total_files, None);
         }
@@ -292,7 +308,7 @@ fn process_directory_with_progress(
             let path = entry.path();
             let file_name = path.file_name().unwrap_or_default().to_string_lossy();
 
-            if path.is_symlink() || file_name.starts_with('.')  {
+            if path.is_symlink() || file_name.starts_with('.') {
                 continue;
             }
 
@@ -373,7 +389,6 @@ fn get_recursive_dir_size(path: &Path) -> u64 {
     total_size
 }
 
-
 fn build_file_tree(path: &Path) -> Result<ParsedPath> {
     let name = path
         .file_name()
@@ -451,12 +466,10 @@ pub fn build_file_tree_shallow(path: &Path) -> Result<ParsedPath> {
             }
         }
 
-        children.sort_by(|a, b| {
-            match (a, b) {
-                (ParsedPath::Directory { .. }, ParsedPath::File { .. }) => std::cmp::Ordering::Less,
-                (ParsedPath::File { .. }, ParsedPath::Directory { .. }) => std::cmp::Ordering::Greater,
-                _ => a.path().cmp(b.path())
-            }
+        children.sort_by(|a, b| match (a, b) {
+            (ParsedPath::Directory { .. }, ParsedPath::File { .. }) => std::cmp::Ordering::Less,
+            (ParsedPath::File { .. }, ParsedPath::Directory { .. }) => std::cmp::Ordering::Greater,
+            _ => a.path().cmp(b.path()),
         });
 
         Ok(ParsedPath::Directory {
@@ -522,7 +535,9 @@ pub fn find_children_in_tree(tree: &[ParsedPath], target_path: &str) -> Option<V
 pub fn to_shallow_node(node: &ParsedPath) -> ParsedPath {
     match node {
         ParsedPath::File { .. } => node.clone(),
-        ParsedPath::Directory { name, path, size, .. } => ParsedPath::Directory {
+        ParsedPath::Directory {
+            name, path, size, ..
+        } => ParsedPath::Directory {
             name: name.clone(),
             path: path.clone(),
             size: *size,
@@ -586,15 +601,6 @@ fn write_file_content(path: &Path, output_file: &mut File) -> Result<()> {
     Ok(())
 }
 
-// fn write_file_content(path: &Path, output_file: &mut File) -> Result<()> {
-//     let mut file = File::open(&path).with_context(|| format!("Opening {}", path.display()))?;
-
-//     writeln!(output_file, "===== {} =====", path.display())?;
-//     io::copy(&mut file, output_file)?;
-//     writeln!(output_file)?;
-
-//     Ok(())
-// }
 
 // /////////////////////////////////////////////////////////////////////////////
 // System Actions (Open, Reveal)
@@ -624,18 +630,13 @@ fn reveal_in_folder(path: &Path) -> Result<()> {
     }
     #[cfg(target_os = "windows")]
     {
-        Command::new("explorer")
-            .arg("/select,")
-            .arg(path)
-            .spawn()?;
+        Command::new("explorer").arg("/select,").arg(path).spawn()?;
     }
 
     #[cfg(target_os = "linux")]
     {
         if let Some(parent) = path.parent() {
-            Command::new("xdg-open")
-                .arg(parent)
-                .spawn()?;
+            Command::new("xdg-open").arg(parent).spawn()?;
         }
     }
 
@@ -731,4 +732,57 @@ fn get_file_metadata(path: &Path) -> Result<FileMetadata> {
             .to_string(),
         size: metadata.len(),
     })
+}
+
+// Tray Setup
+pub fn setup_tray<R: Runtime>(app: &App<R>) -> Result<(), tauri::Error> {
+    // Define Menu Items
+    let open_local = MenuItem::with_id(app, "open_local", "Parse Local Folder", true, None::<&str>)?;
+    let open_github = MenuItem::with_id(app, "open_github", "Parse GitHub Repo", true, None::<&str>)?;
+    let quit = MenuItem::with_id(app, "quit", "Quit", true, None::<&str>)?;
+    let separator = PredefinedMenuItem::separator(app)?;
+
+    let menu = Menu::with_items(app, &[
+        &open_local,
+        &open_github,
+        &separator,
+        &quit
+    ])?;
+
+    // Build the Tray
+    let _tray = TrayIconBuilder::with_id("main-tray")
+        .icon(app.default_window_icon().unwrap().clone())
+        .menu(&menu)
+        .show_menu_on_left_click(cfg!(target_os = "macos"))
+        .on_menu_event(|app, event| {
+            match event.id.as_ref() {
+                "quit" => app.exit(0),
+                id => {
+                    if let Some(window) = app.get_webview_window("main") {
+                        let _ = window.show();
+                        let _ = window.unminimize();
+                        let _ = window.set_focus();
+                    }
+                    let _ = app.emit("tray-event", id);
+                }
+            }
+        })
+        .on_tray_icon_event(|tray, event| {
+            if let TrayIconEvent::Click {
+                button: MouseButton::Left,
+                button_state: MouseButtonState::Up,
+                ..
+            } = event
+            {
+                let app = tray.app_handle();
+                if let Some(window) = app.get_webview_window("main") {
+                    let _ = window.show();
+                    let _ = window.unminimize();
+                    let _ = window.set_focus();
+                }
+            }
+        })
+        .build(app)?;
+
+    Ok(())
 }

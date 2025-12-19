@@ -5,16 +5,11 @@
   "windows": ["main"],
   "permissions": [
     "core:default",
-    "opener:default",
+    "os:default",
     "opener:default",
     "dialog:default",
-    "dialog:default",
-    "core:window:default",
-    "core:window:allow-set-fullscreen",
-    "core:window:allow-is-fullscreen",
-    "core:window:allow-is-maximized",
-    "core:window:allow-minimize",
-    "core:window:allow-unmaximize",
-    "core:window:allow-maximize"
+    "log:default",
+    "core:window:allow-set-shadow",
+    "core:window:allow-set-effects"
   ]
 }

@@ -203,7 +203,7 @@
     const { nodes: n, edges: e } = getLayoutedElements(outNodes, outEdges, { direction });
     nodes = n;
     edges = e;
-    // fitView({ duration: 200 });
+    fitView({ duration: 200 });
   };
 
   const toggleLayout = (dir: Direction) => {
@@ -311,4 +311,16 @@
   :global(.svelte-flow__controls button path) {
     fill: currentColor;
   }
+
+  /* :global(.svelte-flow__pane) {
+    cursor: default !important;
+  }
+
+  :global(.svelte-flow__pane.dragging) {
+    cursor: grabbing !important;
+  }
+
+  :global(.svelte-flow__node) {
+    cursor: pointer !important;
+  } */
 </style>
