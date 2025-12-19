@@ -12,22 +12,14 @@
   "app": {
     "windows": [
       {
-        "title": "parser",
+        "title": "Parser",
         "width": 1024,
         "height": 720,
-        "minWidth": 800,
-        "minHeight": 700,
-        "center": true,
         "resizable": true,
-        "fullscreen": false,
-        "maximized": false,
-
-        "decorations": true,
-        "transparent": true,
+        "titleBarStyle": "Overlay",
         "hiddenTitle": true,
-        "titleBarStyle": "Overlay"
-
-
+        "decorations": true,
+        "zoomHotkeysEnabled": true
       }
     ],
     "security": {

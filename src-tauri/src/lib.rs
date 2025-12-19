@@ -3,8 +3,9 @@ pub mod commands;
 pub mod error;
 pub mod utils;
 
+#[cfg(target_os = "windows")]
 use tauri::Manager;
-use tauri_plugin_log;
+
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
@@ -17,15 +18,14 @@ pub fn run() {
         .plugin(tauri_plugin_dialog::init())
         .plugin(tauri_plugin_opener::init())
         .plugin(tauri_plugin_log::Builder::new().build())
-        
         .setup(|app| {
-            let window = app.get_webview_window("main").unwrap();
-
+            utils::setup_tray(app)?;
 
             #[cfg(target_os = "windows")]
             {
-                window.set_decorations(false).unwrap();
-                window.set_shadow(true).unwrap();
+                if let Some(window) = app.get_webview_window("main") {
+                    let _ = window.set_shadow(true);
+                }
             }
 
             Ok(())

@@ -11,7 +11,9 @@ use std::{
     path::{Path, PathBuf},
     process::Command,
 };
-use tauri::{AppHandle, Emitter};
+use tauri::menu::{Menu, MenuItem, PredefinedMenuItem};
+use tauri::tray::{MouseButton, MouseButtonState, TrayIconBuilder, TrayIconEvent};
+use tauri::{App, Runtime, AppHandle, Emitter, Manager};
 use uuid::Uuid;
 
 pub const APP_NAME: &str = "parser-ai";
@@ -599,15 +601,6 @@ fn write_file_content(path: &Path, output_file: &mut File) -> Result<()> {
     Ok(())
 }
 
-// fn write_file_content(path: &Path, output_file: &mut File) -> Result<()> {
-//     let mut file = File::open(&path).with_context(|| format!("Opening {}", path.display()))?;
-
-//     writeln!(output_file, "===== {} =====", path.display())?;
-//     io::copy(&mut file, output_file)?;
-//     writeln!(output_file)?;
-
-//     Ok(())
-// }
 
 // /////////////////////////////////////////////////////////////////////////////
 // System Actions (Open, Reveal)
@@ -739,4 +732,57 @@ fn get_file_metadata(path: &Path) -> Result<FileMetadata> {
             .to_string(),
         size: metadata.len(),
     })
+}
+
+// Tray Setup
+pub fn setup_tray<R: Runtime>(app: &App<R>) -> Result<(), tauri::Error> {
+    // Define Menu Items
+    let open_local = MenuItem::with_id(app, "open_local", "Parse Local Folder", true, None::<&str>)?;
+    let open_github = MenuItem::with_id(app, "open_github", "Parse GitHub Repo", true, None::<&str>)?;
+    let quit = MenuItem::with_id(app, "quit", "Quit", true, None::<&str>)?;
+    let separator = PredefinedMenuItem::separator(app)?;
+
+    let menu = Menu::with_items(app, &[
+        &open_local,
+        &open_github,
+        &separator,
+        &quit
+    ])?;
+
+    // Build the Tray
+    let _tray = TrayIconBuilder::with_id("main-tray")
+        .icon(app.default_window_icon().unwrap().clone())
+        .menu(&menu)
+        .show_menu_on_left_click(cfg!(target_os = "macos"))
+        .on_menu_event(|app, event| {
+            match event.id.as_ref() {
+                "quit" => app.exit(0),
+                id => {
+                    if let Some(window) = app.get_webview_window("main") {
+                        let _ = window.show();
+                        let _ = window.unminimize();
+                        let _ = window.set_focus();
+                    }
+                    let _ = app.emit("tray-event", id);
+                }
+            }
+        })
+        .on_tray_icon_event(|tray, event| {
+            if let TrayIconEvent::Click {
+                button: MouseButton::Left,
+                button_state: MouseButtonState::Up,
+                ..
+            } = event
+            {
+                let app = tray.app_handle();
+                if let Some(window) = app.get_webview_window("main") {
+                    let _ = window.show();
+                    let _ = window.unminimize();
+                    let _ = window.set_focus();
+                }
+            }
+        })
+        .build(app)?;
+
+    Ok(())
 }
