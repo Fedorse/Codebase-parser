@@ -76,6 +76,7 @@
       parseQueue.addPendingRequest();
       await parseNodes(paths);
       invalidate('app:recent-files');
+      invalidate('app:files');
     } catch (err) {
       console.error(err);
       toast.error('Parse failed');
