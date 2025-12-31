@@ -42,7 +42,7 @@ pub async fn parse(
 #[tauri::command]
 pub async fn parse_repository(url: String) -> Result<String, CommandError> {
     let result = tauri::async_runtime::spawn_blocking(move || -> anyhow::Result<String> {
-        let path = utils::clone_git_repo(&url)?;
+        let path = utils::download_github_repo(&url)?;
         Ok(path.to_string_lossy().to_string())
     })
     .await

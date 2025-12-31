@@ -36,6 +36,8 @@ chrono = { version = "0.4", features = ["serde"] }
 dirs = "5" # Note: version 6 is beta/new, 5 is stable standard, but 6 is fine if it works
 open = "5"
 content_inspector = "0.2"
+reqwest = { version = "0.12", features = ["blocking", "rustls-tls"] }
+zip = "2.2"
 
 # --- Error Handling ---
 anyhow = "1"

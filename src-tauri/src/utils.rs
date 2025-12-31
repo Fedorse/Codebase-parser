@@ -7,7 +7,7 @@ use serde_json::json;
 use std::{
     collections::HashSet,
     fs::{self, File},
-    io::{self, Read, Write},
+    io::{self, Read, Write, Cursor},
     path::{Path, PathBuf},
     process::Command,
 };
@@ -15,6 +15,8 @@ use tauri::menu::{Menu, MenuItem, PredefinedMenuItem};
 use tauri::tray::{MouseButton, MouseButtonState, TrayIconBuilder, TrayIconEvent};
 use tauri::{App, Runtime, AppHandle, Emitter, Manager};
 use uuid::Uuid;
+use reqwest;
+use zip;
 
 pub const APP_NAME: &str = "parser-ai";
 pub const PARSED_FILES_DIR: &str = "parsed-files";
@@ -123,26 +125,44 @@ fn create_parse_directory(remote_url: &str) -> Result<(PathBuf, File, String)> {
 // Git & Remote Handling
 // /////////////////////////////////////////////////////////////////////////////
 
-pub fn clone_git_repo(url: &str) -> Result<PathBuf> {
+pub fn download_github_repo(url: &str) -> Result<PathBuf> {
     let app_dir = get_app_dir()?;
     let temp_dir = app_dir.join(TEMP_REPOS_DIR);
     if !temp_dir.exists() {
         fs::create_dir_all(&temp_dir)?;
     }
 
-    let folder_name = format!("{}_{}", Uuid::new_v4(), "repo");
-    let target_path = temp_dir.join(&folder_name);
+    let clean_url = url.trim_end_matches('/').trim_end_matches(".git");
+    let archive_url = format!("{}/archive/HEAD.zip", clean_url);
 
-    let status = Command::new("git")
-        .args(["clone", "--depth", "1", url, target_path.to_str().unwrap()])
-        .status()
-        .map_err(|e| anyhow::anyhow!("Failed to execute git clone: {}", e))?;
+    let client = reqwest::blocking::Client::builder()
+        .user_agent("parser-ai-app")
+        .build()?;
 
-    if !status.success() {
-        return Err(anyhow::anyhow!("Git clone failed"));
+    let response = client.get(&archive_url).send()?;
+    if !response.status().is_success() {
+        return Err(anyhow::anyhow!("Failed to download repository: HTTP {}", response.status()));
     }
 
-    Ok(target_path)
+    let content = response.bytes()?;
+
+    let reader = Cursor::new(content);
+    let mut archive = zip::ZipArchive::new(reader)?;
+
+    let repo_id = Uuid::new_v4().to_string();
+    let extract_root = temp_dir.join(&repo_id);
+
+    archive.extract(&extract_root)?;
+
+    let mut entries = fs::read_dir(&extract_root)?;
+    if let Some(entry_result) = entries.next() {
+        let entry = entry_result?;
+        if entries.next().is_none() && entry.path().is_dir() {
+            return Ok(entry.path());
+        }
+    }
+
+    Ok(extract_root)
 }
 
 fn sanitize_repo_url(input: &str) -> String {
