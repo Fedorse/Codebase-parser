@@ -24,6 +24,7 @@ pub const CONTENT_FILENAME: &str = "content.txt";
 pub const METADATA_FILENAME: &str = "metadata.json";
 pub const TREE_FILENAME: &str = "tree.json";
 pub const TEMP_REPOS_DIR: &str = "temp-repos";
+pub const MAX_FILE_SIZE: u64 = 100 * 1024 * 1024; // 100MB limit for file size
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct FileMetadata {
@@ -228,6 +229,7 @@ fn is_valid_path(path: &Path) -> bool {
     path.exists() && !path.is_symlink() && !file_name.starts_with('.')
 }
 
+
 pub fn parse_files(
     paths: Vec<String>,
     app: AppHandle,
@@ -237,6 +239,7 @@ pub fn parse_files(
     let (parse_dir, mut output_file, parse_id) = create_parse_directory(&remote_url_str)?;
 
     let total_files = count_text_files(&paths)?;
+
     emit_progress(&app, &parse_id, 0, total_files, None);
 
     let mut parsed_files = Vec::new();
@@ -247,44 +250,47 @@ pub fn parse_files(
     for path_str in &paths {
         let path = Path::new(path_str);
         if is_valid_path(path) {
-            file_tree.push(build_file_tree(&path)?);
+            if let Ok(tree) = build_file_tree(&path) {
+                file_tree.push(tree);
+            }
         }
     }
 
-    for path_str in &paths {
-        let path = Path::new(&path_str);
-        if !is_valid_path(&path){
-            continue;
-        }
+    if total_files > 0 {
+        for path_str in &paths {
+            let path = Path::new(&path_str);
+            if !is_valid_path(&path){
+                continue;
+            }
 
-        let base_path = if path.is_file() {
-            path.parent().unwrap_or(path)
-        } else {
-            path
-        };
+            let base_path = if path.is_file() {
+                path.parent().unwrap_or(path)
+            } else {
+                path
+            };
 
-
-        if path.is_dir() {
-            process_directory_with_progress(
+            if path.is_dir() {
+                process_directory_with_progress(
+                    &path,
+                    base_path,
+                    &mut output_file,
+                    &mut parsed_files,
+                    &mut total_size,
+                    &mut current_count,
+                    total_files,
+                    &app,
+                    &parse_id,
+                )?;
+            } else if process_single_text_file(
                 &path,
                 base_path,
                 &mut output_file,
                 &mut parsed_files,
                 &mut total_size,
-                &mut current_count,
-                total_files,
-                &app,
-                &parse_id,
-            )?;
-        } else if process_single_text_file(
-            &path,
-            base_path,
-            &mut output_file,
-            &mut parsed_files,
-            &mut total_size,
-        )? {
-            current_count += 1;
-            emit_progress(&app, &parse_id, current_count, total_files, None);
+            )? {
+                current_count += 1;
+                emit_progress(&app, &parse_id, current_count, total_files, None);
+            }
         }
     }
 
@@ -312,6 +318,7 @@ pub fn parse_files(
     serde_json::to_writer_pretty(tree_file, &file_tree)?;
 
     let content_path = get_content_path(&parse_dir);
+
     emit_progress(
         &app,
         &parse_id,
@@ -387,12 +394,12 @@ fn process_single_text_file(
                 parsed_files.push(metadata);
                 Ok(true)
             } else {
-                Ok(false)
+                Ok(true)
             }
         }
         Err(e) => {
             eprintln!("Skipping file due to read/write error: {:?} - {}", path, e);
-            Ok(false)
+            Ok(true)
         }
     }
 }
@@ -692,8 +699,9 @@ fn emit_progress(
     let progress = if total > 0 {
         (current as f32 / total as f32) * 100.0
     } else {
-        0.0
+        100.0
     };
+
     let _ = app.emit(
         "parse-progress",
         json!({
@@ -709,6 +717,10 @@ fn count_text_files(paths: &[String]) -> Result<usize> {
     let mut count = 0;
     for path_str in paths {
         let path = Path::new(path_str);
+        if !is_valid_path(path) {
+            continue;
+        }
+
         if path.is_dir() {
             count += count_text_files_in_dir(path)?;
         } else if is_text_file(path) {
@@ -723,6 +735,11 @@ fn count_text_files_in_dir(dir: &Path) -> Result<usize> {
     if let Ok(entries) = fs::read_dir(dir) {
         for entry in entries.flatten() {
             let path = entry.path();
+
+            if !is_valid_path(&path) {
+                continue;
+            }
+
             if path.is_dir() {
                 count += count_text_files_in_dir(&path)?;
             } else if is_text_file(&path) {
@@ -735,6 +752,14 @@ fn count_text_files_in_dir(dir: &Path) -> Result<usize> {
 
 fn is_text_file(path: &Path) -> bool {
     if !path.is_file() {
+        return false;
+    }
+
+    if let Ok(metadata) = fs::metadata(path) {
+        if metadata.len() > MAX_FILE_SIZE {
+            return false;
+        }
+    } else {
         return false;
     }
 
