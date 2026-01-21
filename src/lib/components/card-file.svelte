@@ -1,7 +1,8 @@
 <script lang="ts">
   import { goto, pushState } from '$app/navigation';
   import { toast } from 'svelte-sonner';
-  import { openFileInfolder } from '$lib/tauri';
+  import { invalidate } from '$app/navigation';
+  import { openFileInfolder, deleteFile } from '$lib/tauri';
   import { formatFileSize, formatDate } from '@/lib/utils/utils';
   import * as Card from '$lib/components/ui/card/index.js';
   import * as DropdownMenu from '$lib/components/ui/dropdown-menu/index.js';
@@ -27,10 +28,9 @@
 
   type Props = {
     file: File;
-    handleDelete: (file: File) => void;
   };
 
-  let { file, handleDelete }: Props = $props();
+  let { file }: Props = $props();
 
   let open = $state(false);
   let isLargeFile = $derived(file.file_size > THIRTY_MB_SIZE);
@@ -48,6 +48,17 @@
       separator: true
     }
   ];
+
+  const handleDelete = async (file: File) => {
+    try {
+      await deleteFile(file);
+      invalidate('app:files');
+      toast.success('File deleted successfully');
+    } catch (err) {
+      console.error(err);
+      toast.error('Failed to delete file');
+    }
+  };
 
   const handleOpenDir = async (file: File) => {
     try {
