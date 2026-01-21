@@ -1,0 +1,52 @@
+name: Trigger Release
+on:
+  workflow_dispatch:
+    inputs:
+      version_type:
+        description: 'Version bump type'
+        required: true
+        default: 'patch'
+        type: choice
+        options:
+        - patch
+        - minor
+        - major
+
+jobs:
+  bump-version:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Configure Git
+        run: |
+          git config user.name "GitHub Action"
+          git config user.email "action@github.com"
+
+      - name: Bump Version
+        # This bumps package.json
+        run: npm version ${{ inputs.version_type }} --no-git-tag-version
+
+      - name: Sync Tauri Version
+        # This reads the new version from package.json and updates tauri.conf.json
+        run: |
+          VERSION=$(node -p "require('./package.json').version")
+          echo "New Version: $VERSION"
+          # Use jq to update the version in tauri.conf.json
+          jq --arg v "$VERSION" '.version = $v' tauri.conf.json > tmp.json && mv tmp.json tauri.conf.json
+
+          # Commit and Tag
+          git add package.json tauri.conf.json
+          git commit -m "chore(release): v$VERSION"
+          git tag "v$VERSION"
+          git push origin main
+          git push origin "v$VERSION"
