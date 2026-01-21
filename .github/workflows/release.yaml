@@ -30,14 +30,25 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          - platform: "macos-latest" # Currently runs on Apple Silicon (M1)
+          # MacOS ARM64 (Apple Silicon)
+          - platform: "macos-latest"
             args: "--target aarch64-apple-darwin"
-          - platform: "macos-13"     # Runs on Intel
+            rust_target: "aarch64-apple-darwin"
+
+          # MacOS Intel (x64) - Built on the same runner!
+          - platform: "macos-latest"
             args: "--target x86_64-apple-darwin"
+            rust_target: "x86_64-apple-darwin"
+
+          # Linux
           - platform: "ubuntu-22.04"
             args: ""
+            rust_target: ""
+
+          # Windows
           - platform: "windows-latest"
             args: ""
+            rust_target: ""
 
     runs-on: ${{ matrix.platform }}
     steps:
@@ -45,8 +56,8 @@ jobs:
 
       - name: Install pnpm
         uses: pnpm/action-setup@v4
-        with:
-          version: 10
+        # REMOVED the 'with: version: 10' line to fix the error.
+        # It will now read version 10.11.0 automatically from your package.json.
 
       - name: Setup Node.js
         uses: actions/setup-node@v4
@@ -57,13 +68,11 @@ jobs:
       - name: Install Rust stable
         uses: dtolnay/rust-toolchain@stable
         with:
-          # Those targets are typically added automatically by the action,
-          # but explicitly requesting them is safer.
-          targets: ${{ matrix.platform == 'macos-latest' && 'aarch64-apple-darwin' || matrix.platform == 'macos-13' && 'x86_64-apple-darwin' || '' }}
+          # Uses the explicit target from the matrix, or default for Windows/Linux
+          targets: ${{ matrix.rust_target }}
 
       - name: Install dependencies (ubuntu only)
         if: matrix.platform == 'ubuntu-22.04'
-        # Tauri v2 requires libwebkit2gtk-4.1
         run: |
           sudo apt-get update
           sudo apt-get install -y libgtk-3-dev libwebkit2gtk-4.1-dev libappindicator3-dev librsvg2-dev patchelf
