@@ -9,43 +9,20 @@ on:
       - 'v*'
 
 jobs:
-  create-release:
-    runs-on: ubuntu-22.04
-    outputs:
-      release_id: ${{ steps.create_release.outputs.id }}
-    steps:
-      - uses: actions/checkout@v4
-      - name: Create Release
-        id: create_release
-        uses: softprops/action-gh-release@v2
-        with:
-          name: App ${{ github.ref_name }}
-          draft: true
-          prerelease: false
-          generate_release_notes: true
-
   build-tauri:
-    needs: create-release
     strategy:
       fail-fast: false
       matrix:
         include:
-          # MacOS ARM64 (Apple Silicon)
           - platform: "macos-latest"
             args: "--target aarch64-apple-darwin"
             rust_target: "aarch64-apple-darwin"
-
-          # MacOS Intel (x64) - Built on the same runner!
           - platform: "macos-latest"
             args: "--target x86_64-apple-darwin"
             rust_target: "x86_64-apple-darwin"
-
-          # Linux
           - platform: "ubuntu-22.04"
             args: ""
             rust_target: ""
-
-          # Windows
           - platform: "windows-latest"
             args: ""
             rust_target: ""
@@ -56,8 +33,6 @@ jobs:
 
       - name: Install pnpm
         uses: pnpm/action-setup@v4
-        # REMOVED the 'with: version: 10' line to fix the error.
-        # It will now read version 10.11.0 automatically from your package.json.
 
       - name: Setup Node.js
         uses: actions/setup-node@v4
@@ -68,7 +43,6 @@ jobs:
       - name: Install Rust stable
         uses: dtolnay/rust-toolchain@stable
         with:
-          # Uses the explicit target from the matrix, or default for Windows/Linux
           targets: ${{ matrix.rust_target }}
 
       - name: Install dependencies (ubuntu only)
@@ -85,5 +59,10 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
-          releaseId: ${{ needs.create-release.outputs.release_id }}
+          # This tells Tauri to use the current git tag (v0.1.0)
+          tagName: ${{ github.ref_name }}
+          releaseName: 'App ${{ github.ref_name }}'
+          releaseBody: 'See the assets to download this version and install.'
+          releaseDraft: true
+          prerelease: false
           args: ${{ matrix.args }}
