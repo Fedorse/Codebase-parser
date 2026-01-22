@@ -75,8 +75,12 @@
   const closeModal = async () => {
     confirmOpen = false;
     isOpen = false;
+    if (rename !== file?.name) {
+      await invalidate('app:files');
+      await invalidate('app:recent-files');
+    }
+    await invalidate('app:files');
     onClose();
-    if (rename !== file?.name) await invalidate('app:files');
   };
 
   const handleOpenChange = (open: boolean) => {

@@ -59,7 +59,14 @@
     }
     try {
       const loadedChildren = await expandNode(node.path);
-      node.children = loadedChildren;
+
+      const childrenSyncSyncChecked = loadedChildren.map((child) => {
+        return {
+          ...child,
+          selected: node.selected
+        };
+      });
+      node.children = childrenSyncSyncChecked;
       node.isExpanded = true;
     } catch (err) {
       console.error(err);
