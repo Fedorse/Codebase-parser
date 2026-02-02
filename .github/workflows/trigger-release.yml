@@ -37,15 +37,18 @@ jobs:
         run: npm version ${{ inputs.version_type }} --no-git-tag-version
 
       - name: Sync Tauri Version
-        # This reads the new version from package.json and updates src-tauri/tauri.conf.json
+        # This reads the new version from package.json and updates src-tauri/tauri.conf.json and Cargo.toml
         run: |
           VERSION=$(node -p "require('./package.json').version")
           echo "New Version: $VERSION"
           # Use jq to update the version in src-tauri/tauri.conf.json
           jq --arg v "$VERSION" '.version = $v' src-tauri/tauri.conf.json > tmp.json && mv tmp.json src-tauri/tauri.conf.json
+          # Update version in Cargo.toml using sed
+          sed -i.bak "s/^version = \".*\"/version = \"$VERSION\"/" src-tauri/Cargo.toml
+          rm -f src-tauri/Cargo.toml.bak
 
           # Commit and Tag
-          git add package.json src-tauri/tauri.conf.json
+          git add package.json src-tauri/tauri.conf.json src-tauri/Cargo.toml
           git commit -m "chore(release): v$VERSION"
           git tag "v$VERSION"
           git push origin main
