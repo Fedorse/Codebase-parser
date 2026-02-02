@@ -11,9 +11,10 @@ use std::{
     path::{Path, PathBuf},
     process::Command,
 };
+use tauri::image::Image;
 use tauri::menu::{Menu, MenuItem, PredefinedMenuItem};
 use tauri::tray::{MouseButton, MouseButtonState, TrayIconBuilder, TrayIconEvent};
-use tauri::{App, Runtime, AppHandle, Emitter, Manager};
+use tauri::{include_image, App, Runtime, AppHandle, Emitter, Manager};
 use uuid::Uuid;
 use reqwest;
 use zip;
@@ -837,9 +838,12 @@ pub fn setup_tray<R: Runtime>(app: &App<R>) -> Result<(), tauri::Error> {
         &quit
     ])?;
 
+    // Separate icon for tray (path relative to src-tauri/ = CARGO_MANIFEST_DIR)
+    const TRAY_ICON: Image = include_image!("icons/tray-icon.png");
+
     // Build the Tray
     let _tray = TrayIconBuilder::with_id("main-tray")
-        .icon(app.default_window_icon().unwrap().clone())
+        .icon(TRAY_ICON)
         .menu(&menu)
         .show_menu_on_left_click(cfg!(target_os = "macos"))
         .on_menu_event(|app, event| {
