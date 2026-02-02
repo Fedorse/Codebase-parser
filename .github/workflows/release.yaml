@@ -7,6 +7,12 @@ on:
   push:
     tags:
       - 'v*'
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: 'Tag to build (e.g. v1.0.0). Leave empty when triggered by tag push.'
+        required: false
+        type: string
 
 jobs:
   create-release:
@@ -15,11 +21,14 @@ jobs:
       release_id: ${{ steps.create_release.outputs.id }}
     steps:
       - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.inputs.tag || github.ref }}
       - name: Create Release
         id: create_release
         uses: softprops/action-gh-release@v2
         with:
-          name: App ${{ github.ref_name }}
+          tag_name: ${{ github.event.inputs.tag || github.ref_name }}
+          name: App ${{ github.event.inputs.tag || github.ref_name }}
           draft: true
           prerelease: false
           generate_release_notes: true
@@ -42,6 +51,8 @@ jobs:
     runs-on: ${{ matrix.platform }}
     steps:
       - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.inputs.tag || github.ref }}
 
       - name: Install pnpm
         uses: pnpm/action-setup@v4
