@@ -1,4 +1,6 @@
+
 name: Trigger Release
+
 on:
   workflow_dispatch:
     inputs:
@@ -8,9 +10,9 @@ on:
         default: 'patch'
         type: choice
         options:
-        - patch
-        - minor
-        - major
+          - patch
+          - minor
+          - major
 
 jobs:
   bump-version:
@@ -22,10 +24,16 @@ jobs:
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
 
+      - name: Install pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 10
+
       - name: Setup Node
         uses: actions/setup-node@v4
         with:
           node-version: 22
+          cache: 'pnpm'
 
       - name: Configure Git
         run: |
@@ -33,21 +41,16 @@ jobs:
           git config user.email "action@github.com"
 
       - name: Bump Version
-        # This bumps package.json
-        run: npm version ${{ inputs.version_type }} --no-git-tag-version
+        run: pnpm version ${{ inputs.version_type }} --no-git-tag-version
 
       - name: Sync Tauri Version
-        # This reads the new version from package.json and updates src-tauri/tauri.conf.json and Cargo.toml
         run: |
           VERSION=$(node -p "require('./package.json').version")
           echo "New Version: $VERSION"
-          # Use jq to update the version in src-tauri/tauri.conf.json
           jq --arg v "$VERSION" '.version = $v' src-tauri/tauri.conf.json > tmp.json && mv tmp.json src-tauri/tauri.conf.json
-          # Update version in Cargo.toml using sed
           sed -i.bak "s/^version = \".*\"/version = \"$VERSION\"/" src-tauri/Cargo.toml
           rm -f src-tauri/Cargo.toml.bak
 
-          # Commit and Tag
           git add package.json src-tauri/tauri.conf.json src-tauri/Cargo.toml
           git commit -m "chore(release): v$VERSION"
           git tag "v$VERSION"
