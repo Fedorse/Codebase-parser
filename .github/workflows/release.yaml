@@ -1,3 +1,5 @@
+# Release App — один job: tauri-action сам создаёт релиз и заливает артефакты.
+# Триггер: пуш тега v* или ручной Run workflow. См. .github/RELEASE.md
 
 name: Release App
 
@@ -11,38 +13,19 @@ on:
   workflow_dispatch:
     inputs:
       tag:
-        description: 'Tag to build (e.g. v1.0.0). Required when run manually.'
+        description: 'Tag to build (e.g. v1.0.0). Optional when run manually.'
         required: false
         type: string
 
 jobs:
-  create-release:
-    runs-on: ubuntu-22.04
-    outputs:
-      release_id: ${{ steps.create_release.outputs.id }}
-    steps:
-      - uses: actions/checkout@v4
-        with:
-          ref: ${{ github.event.inputs.tag || github.ref }}
-      - name: Create Release
-        id: create_release
-        uses: softprops/action-gh-release@v2
-        with:
-          tag_name: ${{ github.event.inputs.tag || github.ref_name }}
-          name: Parser ${{ github.event.inputs.tag || github.ref_name }}
-          draft: true
-          prerelease: false
-          generate_release_notes: true
-
-  build-tauri:
-    needs: create-release
+  release:
     strategy:
       fail-fast: false
       matrix:
         include:
-          - platform: macos-latest   # Apple Silicon (M1+)
+          - platform: macos-latest
             args: "--target aarch64-apple-darwin"
-          - platform: macos-14       # Intel (x86_64)
+          - platform: macos-14
             args: "--target x86_64-apple-darwin"
           - platform: ubuntu-22.04
             args: ""
@@ -50,8 +33,10 @@ jobs:
             args: ""
 
     runs-on: ${{ matrix.platform }}
+
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout repository
+        uses: actions/checkout@v4
         with:
           ref: ${{ github.event.inputs.tag || github.ref }}
 
@@ -80,12 +65,17 @@ jobs:
       - name: Install frontend dependencies
         run: pnpm install --frozen-lockfile
 
+      - name: Build Frontend
+        run: pnpm run build
+
       - name: Build and Upload
         uses: tauri-apps/tauri-action@v0
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
-          releaseId: ${{ needs.create-release.outputs.release_id }}
-          tagName: ${{ github.event.inputs.tag || github.ref_name }}
+          tagName: v__VERSION__
+          releaseName: 'Parser v__VERSION__'
+          releaseBody: 'See the assets to download this version and install.'
           releaseDraft: true
+          prerelease: false
           args: ${{ matrix.args }}
