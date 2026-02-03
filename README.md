@@ -21,6 +21,15 @@ It helps you easily provide code context to AI models like Claude, ChatGPT, or G
 
 If you have ideas for improvements or want to contribute to the project, please feel free to fork the repository, make your changes, and submit a pull request.
 
+## Installation
+
+### macOS (Homebrew)
+
+```bash
+brew tap fedorse/tap
+brew install --cask fedorse/tap/codebase-parser
+```
+
 ## Run locally
 
 Prerequisites: **Node.js** (20.x) and **Rust**.
